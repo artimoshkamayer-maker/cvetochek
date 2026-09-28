@@ -9,6 +9,7 @@ import android.os.Build;
 import android.provider.MediaStore;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -30,7 +31,7 @@ public class MusicScannerPlugin extends Plugin {
     public void scan(PluginCall call) {
         String alias = Build.VERSION.SDK_INT >= 33 ? "audio" : "storage";
         try {
-            if (getPermissionState(alias) == PackageManager.PERMISSION_GRANTED) {
+            if (getPermissionState(alias) == PermissionState.GRANTED) {
                 doScan(call);
             } else {
                 requestPermissionForAlias(alias, call, "onPerm");
