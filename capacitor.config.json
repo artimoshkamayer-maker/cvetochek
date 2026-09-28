@@ -1,0 +1,8 @@
+{
+  "appId": "com.artimoshka.cvetochek",
+  "appName": "Цветочек",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
