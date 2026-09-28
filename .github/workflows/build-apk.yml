@@ -20,6 +20,18 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Use persistent debug key
+        env:
+          DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE" ]; then
+            mkdir -p ~/.android
+            echo "$DEBUG_KEYSTORE" | base64 -d > ~/.android/debug.keystore
+            echo "persistent debug key installed"
+          else
+            echo "no DEBUG_KEYSTORE secret, ephemeral key"
+          fi
+
       - name: Install dependencies
         run: npm install
 
@@ -45,9 +57,10 @@ jobs:
           python3 - <<'EOF'
           import pathlib, xml.etree.ElementTree as ET
           pkg = "com/artimoshka/cvetochek"
-          src = pathlib.Path("native/MusicScannerPlugin.java").read_text()
-          dst = pathlib.Path("android/app/src/main/java") / pkg / "MusicScannerPlugin.java"
-          dst.write_text(src)
+          for _name in ["MusicScannerPlugin.java", "PlayerService.java"]:
+              _dst = pathlib.Path("android/app/src/main/java") / pkg / _name
+              _dst.write_text((pathlib.Path("native") / _name).read_text())
+          print("java copied")
           mp = pathlib.Path("android/app/src/main/java") / pkg / "MainActivity.java"
           s = mp.read_text()
           if "MusicScannerPlugin" not in s:
@@ -71,7 +84,10 @@ jobs:
           have = {e.get(ns + "name") for e in r.findall("uses-permission")}
           need = [("android.permission.READ_MEDIA_AUDIO", {}),
                   ("android.permission.READ_EXTERNAL_STORAGE", {"android:maxSdkVersion": "32"}),
-                  ("android.permission.POST_NOTIFICATIONS", {})]
+                  ("android.permission.POST_NOTIFICATIONS", {}),
+                  ("android.permission.FOREGROUND_SERVICE", {}),
+                  ("android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK", {}),
+                  ("android.permission.WAKE_LOCK", {})]
           pos = 0
           for perm, attrs in need:
               if perm not in have:
@@ -82,6 +98,14 @@ jobs:
                       e.set("{%s}%s" % ("http://schemas.android.com/apk/res/android", local), v)
                   r.insert(pos, e)
                   pos += 1
+          app = r.find("application")
+          if app is not None:
+              haveSvc = [e.get(ns + "name") for e in app.findall("service")]
+              if ".PlayerService" not in haveSvc and "com.artimoshka.cvetochek.PlayerService" not in haveSvc:
+                  svc = ET.SubElement(app, "service")
+                  svc.set(ns + "name", ".PlayerService")
+                  svc.set(ns + "exported", "false")
+                  svc.set(ns + "foregroundServiceType", "mediaPlayback")
           t.write(str(man), encoding="utf-8", xml_declaration=True)
           print("native scanner injected OK")
           EOF

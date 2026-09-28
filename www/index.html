@@ -474,7 +474,7 @@ $('miniPlay').textContent=AU().paused?'▶':'❚❚';$('playBtn').textContent=AU
 $('shufBtn').style.opacity=S.shuf?1:.4;
 $('repBtn').style.opacity=S.rep?1:.4;$('repBtn').textContent=S.rep===2?'🔂':S.rep===1?'🔁':'🔁';
 $('fullSrc').textContent=(t.demo?T('demoP')+' • ':T('myMusP')+' • ')+(S.qi+1)+'/'+S.queue.length;
-syncFavBtn();renderQueue();syncMS();
+syncFavBtn();renderQueue();syncMS();capPlayerSync();
 }
 let _msT=0;
 function msArt(t){try{const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');const g=x.createLinearGradient(0,0,512,512);g.addColorStop(0,S.acc||'#0b84ff');g.addColorStop(1,'#101018');x.fillStyle=g;x.fillRect(0,0,512,512);x.fillStyle='#fff';x.font='bold 300px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(cvLetter(t.title),256,280);return c.toDataURL('image/png')}catch(e){return ''}}
@@ -686,6 +686,8 @@ return !!(r&&r.granted);
 }catch(_){return false}};
 renderMusicFolder();
 try{if($('notifBox')&&capPlugin()){$('notifBox').hidden=false;if($('notifBtn'))$('notifBtn').onclick=()=>capNotif(false)}}catch(_){}
+function capPlayerSync(){try{const P=capPlugin();if(!P||!P.playerSync)return;const t=cur();if(!t)return;let paused=true;try{paused=AU().paused}catch(_){}try{P.playerSync({title:t.title||'—',artist:t.artist||'',playing:!paused})}catch(_){}}catch(_){}}
+try{const _PP=capPlugin();if(_PP&&_PP.addListener)_PP.addListener('playerAction',e=>{try{const a=e&&e.action;if(a==='toggle'){const x=AU();if(x.paused)x.play().catch(()=>{});else x.pause()}else if(a==='next')next();else if(a==='prev')prev();else if(a==='stop'){try{AU().pause()}catch(_){}try{_PP.playerStop()}catch(_){}}}catch(_){}})}catch(_){}
 let _qT=0;$('qInput').oninput=e=>{S.q=e.target.value;clearTimeout(_qT);_qT=setTimeout(renderAll,150)};
 
 $('cutPrev').onclick=()=>{const a=AU();if(!a.duration)return;a.currentTime=$('cutS').value/1000*a.duration;a.play()};

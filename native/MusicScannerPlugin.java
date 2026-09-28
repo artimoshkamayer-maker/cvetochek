@@ -85,6 +85,43 @@ public class MusicScannerPlugin extends Plugin {
         call.resolve(r);
     }
 
+    @Override
+    public void load() {
+        PlayerService.sink = new PlayerService.ActionSink() {
+            @Override
+            public void onAction(String action) {
+                try {
+                    JSObject d = new JSObject();
+                    d.put("action", action);
+                    notifyListeners("playerAction", d);
+                } catch (Exception ignored) {}
+            }
+        };
+    }
+
+    @PluginMethod
+    public void playerSync(PluginCall call) {
+        try {
+            String title = call.getString("title", "Цветочек");
+            String artist = call.getString("artist", "");
+            boolean playing = call.getBoolean("playing", true);
+            PlayerService.show(getContext(), title, artist, playing);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("playerSync failed: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void playerStop(PluginCall call) {
+        try {
+            PlayerService.hide(getContext());
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("playerStop failed: " + e.getMessage());
+        }
+    }
+
     private void doScan(PluginCall call) {
         JSArray arr = new JSArray();
         Cursor c = null;
