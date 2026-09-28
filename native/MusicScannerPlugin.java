@@ -21,7 +21,8 @@ import com.getcapacitor.annotation.PermissionCallback;
     name = "MusicScanner",
     permissions = {
         @Permission(alias = "audio", strings = { Manifest.permission.READ_MEDIA_AUDIO }),
-        @Permission(alias = "storage", strings = { Manifest.permission.READ_EXTERNAL_STORAGE })
+        @Permission(alias = "storage", strings = { Manifest.permission.READ_EXTERNAL_STORAGE }),
+        @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS })
     }
 )
 public class MusicScannerPlugin extends Plugin {
@@ -44,6 +45,44 @@ public class MusicScannerPlugin extends Plugin {
     @PermissionCallback
     private void onPerm(PluginCall call) {
         doScan(call);
+    }
+
+    @PluginMethod
+    public void notifState(PluginCall call) {
+        boolean g = Build.VERSION.SDK_INT < 33
+                || getPermissionState("notif") == PermissionState.GRANTED;
+        JSObject r = new JSObject();
+        r.put("granted", g);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void requestNotifs(PluginCall call) {
+        if (Build.VERSION.SDK_INT < 33) {
+            JSObject r = new JSObject();
+            r.put("granted", true);
+            call.resolve(r);
+            return;
+        }
+        try {
+            if (getPermissionState("notif") == PermissionState.GRANTED) {
+                JSObject r = new JSObject();
+                r.put("granted", true);
+                call.resolve(r);
+            } else {
+                requestPermissionForAlias("notif", call, "onNotifPerm");
+            }
+        } catch (Exception e) {
+            call.reject("notif permission error: " + e.getMessage());
+        }
+    }
+
+    @PermissionCallback
+    private void onNotifPerm(PluginCall call) {
+        boolean g = getPermissionState("notif") == PermissionState.GRANTED;
+        JSObject r = new JSObject();
+        r.put("granted", g);
+        call.resolve(r);
     }
 
     private void doScan(PluginCall call) {
