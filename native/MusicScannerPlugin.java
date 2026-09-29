@@ -169,6 +169,17 @@ public class MusicScannerPlugin extends Plugin {
                     arr.put(o);
                 }
             }
+            JSObject ret = new JSObject();
+            ret.put("tracks", arr);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("scan failed: " + e.getMessage());
+        } finally {
+            if (c != null) {
+                try { c.close(); } catch (Exception ignored) {}
+            }
+        }
+    }
     @PluginMethod
     public void scanVideos(PluginCall call) {
         String alias = Build.VERSION.SDK_INT >= 33 ? "video" : "storage";
