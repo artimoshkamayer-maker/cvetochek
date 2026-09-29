@@ -48,10 +48,10 @@ nav.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(5
 nav.tabs button{flex:1;border:0;background:none;color:var(--mut);font-size:9px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;padding:4px}
 nav.tabs button span.i{font-size:17px}
 nav.tabs button.on{color:var(--acc);font-weight:700}
-.sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet{position:fixed;left:0;right:0;top:0;bottom:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet[hidden]{display:none}
-.sheet .bk{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.sheet .pn{position:relative;width:min(520px,100%);max-height:92vh;overflow-y:auto;background:var(--bg2);border-radius:22px 22px 0 0;padding:10px 16px 30px;animation:up .25s ease}
+.sheet .bk{position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.55)}
+.sheet .pn{position:relative;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:var(--bg2);border-radius:22px 22px 0 0;padding:10px 16px 30px;animation:up .25s ease}
 @keyframes up{from{transform:translateY(40px);opacity:.5}}
 .grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:6px auto 12px}
 #full .cover{width:min(300px,70vw);aspect-ratio:1;border-radius:24px;margin:8px auto;display:grid;place-items:center;font-size:90px;font-weight:800;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;overflow:hidden}
