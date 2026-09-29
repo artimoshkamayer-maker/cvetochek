@@ -3,6 +3,15 @@
   "appName": "Цветочек",
   "webDir": "www",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": false,
+    "backgroundColor": "#121016"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "launchAutoHide": true,
+      "backgroundColor": "#121016",
+      "showSpinner": false
+    }
   }
 }

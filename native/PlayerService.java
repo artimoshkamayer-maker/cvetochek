@@ -17,11 +17,8 @@ import android.graphics.Typeface;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
+import android.widget.RemoteViews;
 import androidx.core.app.NotificationCompat;
-import androidx.media.session.MediaButtonReceiver;
 
 public class PlayerService extends Service {
     public interface ActionSink { void onEvent(String action, long posMs); }
@@ -30,8 +27,16 @@ public class PlayerService extends Service {
     private static final String CH = "cvet_player";
     private static final int NID = 7;
 
-    private MediaSessionCompat session;
     private PowerManager.WakeLock wl;
+
+    private String lastTitle = "Цветочек";
+    private String lastArtist = "";
+    private boolean lastPlaying = true;
+    private long lastPos = 0;
+    private long lastDur = 0;
+    private boolean lastFav = false;
+    private String lastAcc = "#0b84ff";
+    private String lastLetter = "♪";
 
     public static void show(Context ctx, String title, String artist, boolean playing,
                             long posMs, long durMs, boolean fav, String acc, String letter) {
@@ -65,22 +70,6 @@ public class PlayerService extends Service {
             wl.setReferenceCounted(false);
             wl.acquire();
         } catch (Exception ignored) {}
-        try {
-            session = new MediaSessionCompat(this, "cvetochek");
-            session.setCallback(new MediaSessionCompat.Callback() {
-                @Override public void onPlay() { fire("toggle", -1); }
-                @Override public void onPause() { fire("toggle", -1); }
-                @Override public void onSkipToNext() { fire("next", -1); }
-                @Override public void onSkipToPrevious() { fire("prev", -1); }
-                @Override public void onStop() { fire("stop", -1); }
-                @Override public void onSeekTo(long pos) { fire("seekto", pos); }
-            });
-            Intent mb = new Intent(Intent.ACTION_MEDIA_BUTTON).setClass(this, MediaButtonReceiver.class);
-            int fl = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= 23) fl |= PendingIntent.FLAG_IMMUTABLE;
-            session.setMediaButtonReceiver(PendingIntent.getBroadcast(this, 0, mb, fl));
-            session.setActive(true);
-        } catch (Exception ignored) {}
     }
 
     private void fire(String action, long posMs) {
@@ -98,16 +87,16 @@ public class PlayerService extends Service {
                 return START_NOT_STICKY;
             }
             if (intent.getBooleanExtra("show", false)) {
-                Notification n = buildFull(
-                    intent.getStringExtra("title"),
-                    intent.getStringExtra("artist"),
-                    intent.getBooleanExtra("playing", true),
-                    intent.getLongExtra("pos", 0),
-                    intent.getLongExtra("dur", 0),
-                    intent.getBooleanExtra("fav", false),
-                    intent.getStringExtra("acc"),
-                    intent.getStringExtra("letter"));
+                lastTitle = strExtra(intent, "title", "Цветочек");
+                lastArtist = strExtra(intent, "artist", "");
+                lastPlaying = intent.getBooleanExtra("playing", true);
+                lastPos = Math.max(0, intent.getLongExtra("pos", 0));
+                lastDur = Math.max(0, intent.getLongExtra("dur", 0));
+                lastFav = intent.getBooleanExtra("fav", false);
+                lastAcc = strExtra(intent, "acc", "#0b84ff");
+                lastLetter = strExtra(intent, "letter", "♪");
                 try {
+                    Notification n = buildCustom();
                     if (Build.VERSION.SDK_INT >= 29) {
                         startForeground(NID, n, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
                     } else {
@@ -120,9 +109,17 @@ public class PlayerService extends Service {
         return START_NOT_STICKY;
     }
 
+    private String strExtra(Intent intent, String key, String def) {
+        try {
+            String v = intent.getStringExtra(key);
+            return v == null ? def : v;
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
     @Override
     public void onDestroy() {
-        try { if (session != null) session.release(); } catch (Exception ignored) {}
         try { if (wl != null && wl.isHeld()) wl.release(); } catch (Exception ignored) {}
         super.onDestroy();
     }
@@ -178,7 +175,7 @@ public class PlayerService extends Service {
     }
 
     private Bitmap letterArt(String letter, String acc) {
-        int S = 256;
+        int S = 144;
         Bitmap bm = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bm);
         int c1 = 0xFF0B84FF, c2 = 0xFF101018;
@@ -188,7 +185,7 @@ public class PlayerService extends Service {
         c.drawRect(0, 0, S, S, p);
         Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
         t.setColor(Color.WHITE);
-        t.setTextSize(150);
+        t.setTextSize(84);
         t.setTypeface(Typeface.DEFAULT_BOLD);
         t.setTextAlign(Paint.Align.CENTER);
         String L = (letter == null || letter.isEmpty()) ? "♪" : letter.substring(0, 1);
@@ -196,49 +193,47 @@ public class PlayerService extends Service {
         return bm;
     }
 
-    private Notification buildFull(String title, String artist, boolean playing,
-                                   long posMs, long durMs, boolean fav, String acc, String letter) {
+    private static String fmt(long ms) {
+        long s = Math.max(0, ms / 1000);
+        return (s / 60) + ":" + String.format("%02d", s % 60);
+    }
+
+    private void fillViews(RemoteViews v) {
+        v.setTextViewText(R.id.title, lastTitle == null || lastTitle.isEmpty() ? "Цветочек" : lastTitle);
+        v.setTextViewText(R.id.sub, lastArtist == null ? "" : lastArtist);
+        try { v.setImageViewBitmap(R.id.art, letterArt(lastLetter, lastAcc)); } catch (Exception ignored) {}
+        v.setImageViewResource(R.id.btnFav, favIcon(lastFav));
+        v.setImageViewResource(R.id.btnPrev, android.R.drawable.ic_media_previous);
+        v.setImageViewResource(R.id.btnPlay, lastPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
+        v.setImageViewResource(R.id.btnNext, android.R.drawable.ic_media_next);
+        v.setImageViewResource(R.id.btnStop, android.R.drawable.ic_menu_close_clear_cancel);
+        int max = 1000;
+        int p = lastDur > 0 ? (int) Math.min(max, Math.max(0, lastPos * max / lastDur)) : 0;
+        v.setProgressBar(R.id.prog, max, p, false);
+        v.setTextViewText(R.id.tCur, fmt(lastPos));
+        v.setTextViewText(R.id.tDur, fmt(lastDur));
+        v.setOnClickPendingIntent(R.id.btnFav, pi("fav"));
+        v.setOnClickPendingIntent(R.id.btnPrev, pi("prev"));
+        v.setOnClickPendingIntent(R.id.btnPlay, pi("toggle"));
+        v.setOnClickPendingIntent(R.id.btnNext, pi("next"));
+        v.setOnClickPendingIntent(R.id.btnStop, pi("stop"));
+    }
+
+    private Notification buildCustom() {
         ensureChannel();
-        if (title == null || title.isEmpty()) title = "Цветочек";
-        if (artist == null) artist = "";
-        try {
-            if (session != null) {
-                long actions = PlaybackStateCompat.ACTION_PLAY
-                    | PlaybackStateCompat.ACTION_PAUSE
-                    | PlaybackStateCompat.ACTION_PLAY_PAUSE
-                    | PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                    | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                    | PlaybackStateCompat.ACTION_SEEK_TO
-                    | PlaybackStateCompat.ACTION_STOP;
-                int state = playing ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED;
-                session.setPlaybackState(new PlaybackStateCompat.Builder()
-                    .setActions(actions)
-                    .setState(state, Math.max(0, posMs), 1.0f)
-                    .build());
-                MediaMetadataCompat.Builder md = new MediaMetadataCompat.Builder()
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, letterArt(letter, acc));
-                if (durMs > 0) md.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durMs);
-                session.setMetadata(md.build());
-            }
-        } catch (Exception ignored) {}
+        RemoteViews small = new RemoteViews(getPackageName(), R.layout.notif_player);
+        fillViews(small);
+        RemoteViews big = new RemoteViews(getPackageName(), R.layout.notif_player);
+        fillViews(big);
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CH)
             .setSmallIcon(appIcon())
-            .setContentTitle(title)
-            .setContentText(artist)
+            .setCustomContentView(small)
+            .setCustomBigContentView(big)
+            .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(favIcon(fav), "fav", pi("fav"))
-            .addAction(android.R.drawable.ic_media_previous, "prev", pi("prev"))
-            .addAction(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, "play", pi("toggle"))
-            .addAction(android.R.drawable.ic_media_next, "next", pi("next"))
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "stop", pi("stop"))
-            .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                .setMediaSession(session == null ? null : session.getSessionToken())
-                .setShowActionsInCompactView(1, 2, 3));
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         PendingIntent open = openPI();
         if (open != null) b.setContentIntent(open);
         return b.build();

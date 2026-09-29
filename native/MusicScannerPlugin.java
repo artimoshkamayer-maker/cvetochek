@@ -21,6 +21,7 @@ import com.getcapacitor.annotation.PermissionCallback;
     name = "MusicScanner",
     permissions = {
         @Permission(alias = "audio", strings = { Manifest.permission.READ_MEDIA_AUDIO }),
+        @Permission(alias = "video", strings = { Manifest.permission.READ_MEDIA_VIDEO }),
         @Permission(alias = "storage", strings = { Manifest.permission.READ_EXTERNAL_STORAGE }),
         @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS })
     }
@@ -168,11 +169,58 @@ public class MusicScannerPlugin extends Plugin {
                     arr.put(o);
                 }
             }
+    @PluginMethod
+    public void scanVideos(PluginCall call) {
+        String alias = Build.VERSION.SDK_INT >= 33 ? "video" : "storage";
+        try {
+            if (getPermissionState(alias) == PermissionState.GRANTED) {
+                doScanVideos(call);
+            } else {
+                requestPermissionForAlias(alias, call, "onVideoPerm");
+            }
+        } catch (Exception e) {
+            call.reject("permission error: " + e.getMessage());
+        }
+    }
+
+    @PermissionCallback
+    private void onVideoPerm(PluginCall call) {
+        doScanVideos(call);
+    }
+
+    private void doScanVideos(PluginCall call) {
+        JSArray arr = new JSArray();
+        Cursor c = null;
+        try {
+            ContentResolver cr = getContext().getContentResolver();
+            Uri base = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+            String[] proj = new String[] {
+                MediaStore.Video.Media._ID,
+                MediaStore.Video.Media.DISPLAY_NAME,
+                MediaStore.Video.Media.SIZE
+            };
+            String sel = MediaStore.Video.Media.SIZE + " > ?";
+            String[] args = new String[] { "100000" };
+            c = cr.query(base, proj, sel, args, MediaStore.Video.Media.DISPLAY_NAME + " ASC");
+            if (c != null) {
+                int iId = c.getColumnIndex(MediaStore.Video.Media._ID);
+                int iName = c.getColumnIndex(MediaStore.Video.Media.DISPLAY_NAME);
+                int iSize = c.getColumnIndex(MediaStore.Video.Media.SIZE);
+                while (c.moveToNext() && arr.length() < MAX_TRACKS) {
+                    long id = c.getLong(iId);
+                    JSObject o = new JSObject();
+                    o.put("id", id);
+                    o.put("uri", Uri.withAppendedPath(base, String.valueOf(id)).toString());
+                    o.put("name", c.getString(iName));
+                    o.put("size", iSize >= 0 ? c.getLong(iSize) : 0);
+                    arr.put(o);
+                }
+            }
             JSObject ret = new JSObject();
-            ret.put("tracks", arr);
+            ret.put("videos", arr);
             call.resolve(ret);
         } catch (Exception e) {
-            call.reject("scan failed: " + e.getMessage());
+            call.reject("scanVideos failed: " + e.getMessage());
         } finally {
             if (c != null) {
                 try { c.close(); } catch (Exception ignored) {}

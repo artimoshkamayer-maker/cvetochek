@@ -66,6 +66,10 @@ jobs:
           for _d in ["ic_fav_on.xml", "ic_fav_off.xml"]:
               (dd / _d).write_text((pathlib.Path("native") / _d).read_text())
           assert (dd / "ic_fav_on.xml").exists() and (dd / "ic_fav_off.xml").exists(), "drawables copy failed"
+          ld = pathlib.Path("android/app/src/main/res/layout")
+          ld.mkdir(parents=True, exist_ok=True)
+          (ld / "notif_player.xml").write_text(pathlib.Path("native/notif_player.xml").read_text())
+          assert (ld / "notif_player.xml").exists(), "layout copy failed"
           bgp = pathlib.Path("android/app/build.gradle")
           bg = bgp.read_text()
           if "androidx.media:media" not in bg:
@@ -86,6 +90,14 @@ jobs:
                             "        registerPlugin(MusicScannerPlugin.class);\n"
                             "        super.onCreate(savedInstanceState);\n"
                             "    }\n"
+                            "    @Override\n"
+                            "    protected void onResume() {\n"
+                            "        super.onResume();\n"
+                            "        try {\n"
+                            "            android.webkit.WebView wv = getBridge().getWebView();\n"
+                            "            if (wv != null) { wv.onResume(); wv.resumeTimers(); }\n"
+                            "        } catch (Exception ignored) {}\n"
+                            "    }\n"
                             "}")
               mp.write_text(s)
           assert "registerPlugin(MusicScannerPlugin.class)" in mp.read_text(), "MainActivity patch failed"
@@ -96,6 +108,7 @@ jobs:
           ns = "{http://schemas.android.com/apk/res/android}"
           have = {e.get(ns + "name") for e in r.findall("uses-permission")}
           need = [("android.permission.READ_MEDIA_AUDIO", {}),
+                  ("android.permission.READ_MEDIA_VIDEO", {}),
                   ("android.permission.READ_EXTERNAL_STORAGE", {"android:maxSdkVersion": "32"}),
                   ("android.permission.POST_NOTIFICATIONS", {}),
                   ("android.permission.FOREGROUND_SERVICE", {}),
