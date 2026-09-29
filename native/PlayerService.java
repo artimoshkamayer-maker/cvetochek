@@ -236,7 +236,7 @@ public class PlayerService extends Service {
             .addAction(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, "play", pi("toggle"))
             .addAction(android.R.drawable.ic_media_next, "next", pi("next"))
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "stop", pi("stop"))
-            .setStyle(new NotificationCompat.MediaStyle()
+            .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                 .setMediaSession(session == null ? null : session.getSessionToken())
                 .setShowActionsInCompactView(1, 2, 3));
         PendingIntent open = openPI();
