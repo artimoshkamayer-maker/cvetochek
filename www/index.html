@@ -1,3 +1,4 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#121016;--bg2:#1c1922;--card:#211e29;--card2:#282434;--txt:#fff;--mut:#a7a1b8;--acc:#0b84ff;--acc2:#00c9ff;--line:rgba(255,255,255,.08);--r:16px}
@@ -686,8 +687,9 @@ return !!(r&&r.granted);
 }catch(_){return false}};
 renderMusicFolder();
 try{if($('notifBox')&&capPlugin()){$('notifBox').hidden=false;if($('notifBtn'))$('notifBtn').onclick=()=>capNotif(false)}}catch(_){}
-function capPlayerSync(){try{const P=capPlugin();if(!P||!P.playerSync)return;const t=cur();if(!t)return;let paused=true;try{paused=AU().paused}catch(_){}try{P.playerSync({title:t.title||'—',artist:t.artist||'',playing:!paused})}catch(_){}}catch(_){}}
-try{const _PP=capPlugin();if(_PP&&_PP.addListener)_PP.addListener('playerAction',e=>{try{const a=e&&e.action;if(a==='toggle'){const x=AU();if(x.paused)x.play().catch(()=>{});else x.pause()}else if(a==='next')next();else if(a==='prev')prev();else if(a==='stop'){try{AU().pause()}catch(_){}try{_PP.playerStop()}catch(_){}}}catch(_){}})}catch(_){}
+function capPlayerSync(){try{const P=capPlugin();if(!P||!P.playerSync)return;const t=cur();if(!t)return;let paused=true,pos=0,dur=0;try{const a=AU();paused=a.paused;pos=a.currentTime||0;dur=a.duration||0}catch(_){}let L='♪';try{L=cvLetter(t.title)||'♪'}catch(_){}try{P.playerSync({title:t.title||'—',artist:t.artist||'',playing:!paused,pos:pos,dur:isFinite(dur)?dur:0,fav:(S.fav||[]).includes(t.id),acc:S.acc||'#0b84ff',letter:L})}catch(_){}}catch(_){}}
+try{const _PP=capPlugin();if(_PP&&_PP.addListener)_PP.addListener('playerAction',e=>{try{const a=e&&e.action;if(a==='toggle'){const x=AU();if(x.paused)x.play().catch(()=>{});else x.pause()}else if(a==='next')next();else if(a==='prev')prev();else if(a==='fav'){try{const t=cur();if(t){toggleFav(t.id);capPlayerSync()}}catch(_){}}else if(a==='seekto'){try{const x=AU();const v=+((e&&e.pos)||0);if(isFinite(x.duration)&&x.duration)x.currentTime=Math.min(Math.max(0,v),x.duration)}catch(_){}}else if(a==='stop'){try{AU().pause()}catch(_){}try{_PP.playerStop()}catch(_){}}}catch(_){}})}catch(_){}
+setInterval(()=>{try{const P=capPlugin();if(!P||!P.playerSync)return;const t=cur();if(!t)return;let a=null;try{a=AU()}catch(_){}if(!a||a.paused||!isFinite(a.duration)||!a.duration)return;capPlayerSync()}catch(_){}},4000);
 let _qT=0;$('qInput').oninput=e=>{S.q=e.target.value;clearTimeout(_qT);_qT=setTimeout(renderAll,150)};
 
 $('cutPrev').onclick=()=>{const a=AU();if(!a.duration)return;a.currentTime=$('cutS').value/1000*a.duration;a.play()};

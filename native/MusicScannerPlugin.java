@@ -89,10 +89,11 @@ public class MusicScannerPlugin extends Plugin {
     public void load() {
         PlayerService.sink = new PlayerService.ActionSink() {
             @Override
-            public void onAction(String action) {
+            public void onEvent(String action, long posMs) {
                 try {
                     JSObject d = new JSObject();
                     d.put("action", action);
+                    d.put("pos", posMs / 1000.0);
                     notifyListeners("playerAction", d);
                 } catch (Exception ignored) {}
             }
@@ -102,10 +103,16 @@ public class MusicScannerPlugin extends Plugin {
     @PluginMethod
     public void playerSync(PluginCall call) {
         try {
-            String title = call.getString("title", "Цветочек");
-            String artist = call.getString("artist", "");
-            boolean playing = call.getBoolean("playing", true);
-            PlayerService.show(getContext(), title, artist, playing);
+            JSObject d = call.getData();
+            String title = d.optString("title", "Цветочек");
+            String artist = d.optString("artist", "");
+            boolean playing = d.optBoolean("playing", true);
+            long posMs = (long) (d.optDouble("pos", 0) * 1000);
+            long durMs = (long) (d.optDouble("dur", 0) * 1000);
+            boolean fav = d.optBoolean("fav", false);
+            String acc = d.optString("acc", "#0b84ff");
+            String letter = d.optString("letter", "♪");
+            PlayerService.show(getContext(), title, artist, playing, posMs, durMs, fav, acc, letter);
             call.resolve();
         } catch (Exception e) {
             call.reject("playerSync failed: " + e.getMessage());

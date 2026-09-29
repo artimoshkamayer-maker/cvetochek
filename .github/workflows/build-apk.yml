@@ -61,6 +61,19 @@ jobs:
               _dst = pathlib.Path("android/app/src/main/java") / pkg / _name
               _dst.write_text((pathlib.Path("native") / _name).read_text())
           print("java copied")
+          dd = pathlib.Path("android/app/src/main/res/drawable")
+          dd.mkdir(parents=True, exist_ok=True)
+          for _d in ["ic_fav_on.xml", "ic_fav_off.xml"]:
+              (dd / _d).write_text((pathlib.Path("native") / _d).read_text())
+          assert (dd / "ic_fav_on.xml").exists() and (dd / "ic_fav_off.xml").exists(), "drawables copy failed"
+          bgp = pathlib.Path("android/app/build.gradle")
+          bg = bgp.read_text()
+          if "androidx.media:media" not in bg:
+              anchor = 'implementation "androidx.appcompat:appcompat:'
+              assert anchor in bg, "gradle anchor missing"
+              bg = bg.replace(anchor, 'implementation "androidx.media:media:1.7.0"\n    ' + anchor, 1)
+              bgp.write_text(bg)
+          print("native assets ok")
           mp = pathlib.Path("android/app/src/main/java") / pkg / "MainActivity.java"
           s = mp.read_text()
           if "MusicScannerPlugin" not in s:
@@ -106,6 +119,14 @@ jobs:
                   svc.set(ns + "name", ".PlayerService")
                   svc.set(ns + "exported", "false")
                   svc.set(ns + "foregroundServiceType", "mediaPlayback")
+              haveRecv = [e.get(ns + "name") for e in app.findall("receiver")]
+              if "androidx.media.session.MediaButtonReceiver" not in haveRecv:
+                  rcv = ET.SubElement(app, "receiver")
+                  rcv.set(ns + "name", "androidx.media.session.MediaButtonReceiver")
+                  rcv.set(ns + "exported", "false")
+                  flt = ET.SubElement(rcv, "intent-filter")
+                  act = ET.SubElement(flt, "action")
+                  act.set(ns + "name", "android.intent.action.MEDIA_BUTTON")
           t.write(str(man), encoding="utf-8", xml_declaration=True)
           print("native scanner injected OK")
           EOF
