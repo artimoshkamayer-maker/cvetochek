@@ -332,7 +332,7 @@ if(!nodes)return;const e=S.eq;
 if(!Array.isArray(e.bands)||e.bands.length!==10){e.bands=[0,0,0,0,0,0,0,0,0,0];e.pre='Custom'}
 nodes.bands.forEach((b,i)=>b.gain.value=e.on?e.bands[i]:0);
 nodes.bass.gain.value=e.on?e.bass:0;
-nodes.pre.gain.value=1;
+try{let mx=0;if(e.on){for(const g of e.bands)mx=Math.max(mx,g||0);mx=Math.max(mx,e.bass||0)}nodes.pre.gain.value=Math.pow(10,-Math.max(0,mx)/20)}catch(_){nodes.pre.gain.value=1}
 }
 au.addEventListener('play',()=>{audioGraph();AC&&AC.resume&&AC.resume()});
 
