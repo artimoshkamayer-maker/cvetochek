@@ -138,7 +138,7 @@ public class MusicScannerPlugin extends Plugin {
             int rep = d.optInt("repeat", 0);
             java.util.List<PlayerService.Track> q = null;
             try {
-                com.getcapacitor.JSArray qa = d.getArray("queue");
+                org.json.JSONArray qa = d.optJSONArray("queue");
                 if (qa != null) {
                     q = new java.util.ArrayList<>();
                     for (int i = 0; i < qa.length(); i++) {
@@ -221,7 +221,7 @@ public class MusicScannerPlugin extends Plugin {
             boolean on = d.optBoolean("on", false);
             float[] bands = new float[10];
             try {
-                com.getcapacitor.JSArray ba = d.getArray("bands");
+                org.json.JSONArray ba = d.optJSONArray("bands");
                 if (ba != null) for (int i = 0; i < 10 && i < ba.length(); i++) bands[i] = (float) ba.getDouble(i);
             } catch (Exception ignored) {}
             float bass = (float) d.optDouble("bass", 0);
