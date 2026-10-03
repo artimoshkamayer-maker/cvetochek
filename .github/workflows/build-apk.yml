@@ -46,10 +46,10 @@ jobs:
           npm i -D @capacitor/assets
           npx capacitor-assets generate --android
 
-      - name: Set version 1.8
+      - name: Set version 2.0
         run: |
-          sed -i -E 's/versionCode [0-9]+/versionCode 18/' android/app/build.gradle
-          sed -i -E 's/versionName "[^"]+"/versionName "1.8"/' android/app/build.gradle
+          sed -i -E 's/versionCode [0-9]+/versionCode 20/' android/app/build.gradle
+          sed -i -E 's/versionName "[^"]+"/versionName "2.0"/' android/app/build.gradle
           grep -E 'version(Code|Name)' android/app/build.gradle
 
       - name: Inject native music scanner
@@ -77,6 +77,12 @@ jobs:
               assert anchor in bg, "gradle anchor missing"
               bg = bg.replace(anchor, 'implementation "androidx.media:media:1.7.0"\n    ' + anchor, 1)
               bgp.write_text(bg)
+          bg2 = bgp.read_text()
+          if "androidx.media3:media3-exoplayer" not in bg2:
+              anchor2 = 'implementation "androidx.appcompat:appcompat:'
+              assert anchor2 in bg2, "gradle anchor2 missing"
+              bg2 = bg2.replace(anchor2, 'implementation "androidx.media3:media3-exoplayer:1.4.1"\n    ' + anchor2, 1)
+              bgp.write_text(bg2)
           print("native assets ok")
           mp = pathlib.Path("android/app/src/main/java") / pkg / "MainActivity.java"
           s = mp.read_text()
@@ -100,6 +106,11 @@ jobs:
                             "    }\n"
                             "}")
               mp.write_text(s)
+          if "moveTaskToBack" not in mp.read_text():
+              s2 = mp.read_text()
+              s2 = s2.replace("protected void onPostResume()",
+                              "public void onBackPressed() {\n        try { moveTaskToBack(true); } catch (Exception ignored) { super.onBackPressed(); }\n    }\n    @Override\n    protected void onPostResume()")
+              mp.write_text(s2)
           assert "registerPlugin(MusicScannerPlugin.class)" in mp.read_text(), "MainActivity patch failed"
           man = pathlib.Path("android/app/src/main/AndroidManifest.xml")
           ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
@@ -132,6 +143,13 @@ jobs:
                   svc.set(ns + "name", ".PlayerService")
                   svc.set(ns + "exported", "false")
                   svc.set(ns + "foregroundServiceType", "mediaPlayback")
+                  svc.set(ns + "stopWithTask", "false")
+              for _svc in app.findall("service"):
+                  _nm = _svc.get(ns + "name") or ""
+                  if "PlayerService" in _nm:
+                      _svc.set(ns + "stopWithTask", "false")
+                      if not _svc.get(ns + "foregroundServiceType"):
+                          _svc.set(ns + "foregroundServiceType", "mediaPlayback")
               haveRecv = [e.get(ns + "name") for e in app.findall("receiver")]
               if "androidx.media.session.MediaButtonReceiver" not in haveRecv:
                   rcv = ET.SubElement(app, "receiver")
@@ -153,5 +171,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: cvetochek-1.8
+          name: cvetochek-2.0
           path: android/app/build/outputs/apk/debug/app-debug.apk
