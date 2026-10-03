@@ -110,14 +110,124 @@ public class MusicScannerPlugin extends Plugin {
             boolean playing = d.optBoolean("playing", true);
             long posMs = (long) (d.optDouble("pos", 0) * 1000);
             long durMs = (long) (d.optDouble("dur", 0) * 1000);
-            boolean fav = d.optBoolean("fav", false);
-            String acc = d.optString("acc", "#0b84ff");
-            String letter = d.optString("letter", "♪");
-            PlayerService.show(getContext(), title, artist, playing, posMs, durMs, fav, acc, letter);
+            String acc = d.optString("acc", "#e91e63");
+            int fav = d.optBoolean("fav", false) ? 1 : 0;
+            String letter = d.optString("letter", "?");
+            String art = d.optString("art", "");
+            if (art.isEmpty()) art = d.optString("artUri", "");
+            String pkg = d.optString("pkg", "");
+            if (pkg.isEmpty()) pkg = getContext().getPackageName();
+            PlayerService.show(getContext(), title, artist, playing, posMs, durMs, acc, fav, letter, art, pkg);
             call.resolve();
         } catch (Exception e) {
             call.reject("playerSync failed: " + e.getMessage());
         }
+    }
+
+    @PluginMethod
+    public void audioPlay(PluginCall call) {
+        try {
+            PlayerService.touchJs();
+            JSObject d = call.getData();
+            String uri = d.optString("uri", "");
+            String title = d.optString("title", "");
+            String artist = d.optString("artist", "");
+            String acc = d.optString("acc", "#e91e63");
+            boolean autoplay = d.optBoolean("autoplay", true);
+            int idx = d.optInt("index", -1);
+            int rep = d.optInt("repeat", 0);
+            java.util.List<PlayerService.Track> q = null;
+            try {
+                com.getcapacitor.JSArray qa = d.getArray("queue");
+                if (qa != null) {
+                    q = new java.util.ArrayList<>();
+                    for (int i = 0; i < qa.length(); i++) {
+                        try {
+                            org.json.JSONObject o = qa.getJSONObject(i);
+                            q.add(new PlayerService.Track(o.optString("uri", ""), o.optString("title", ""), o.optString("artist", "")));
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } catch (Exception ignored) {}
+            PlayerService.audioPlay(getContext(), uri, title, artist, acc, autoplay, q, idx, rep);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("audioPlay failed: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void audioToggle(PluginCall call) {
+        try { PlayerService.touchJs(); PlayerService.audioToggle(); call.resolve(); }
+        catch (Exception e) { call.reject("audioToggle failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioPause(PluginCall call) {
+        try { PlayerService.touchJs(); PlayerService.audioPause(); call.resolve(); }
+        catch (Exception e) { call.reject("audioPause failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioResume(PluginCall call) {
+        try { PlayerService.touchJs(); PlayerService.audioResume(); call.resolve(); }
+        catch (Exception e) { call.reject("audioResume failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioSeek(PluginCall call) {
+        try {
+            PlayerService.touchJs();
+            int sec = (int) call.getData().optDouble("sec", 0);
+            PlayerService.audioSeek(sec);
+            call.resolve();
+        } catch (Exception e) { call.reject("audioSeek failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioNext(PluginCall call) {
+        try { PlayerService.touchJs(); PlayerService.audioNext(); call.resolve(); }
+        catch (Exception e) { call.reject("audioNext failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioPrev(PluginCall call) {
+        try { PlayerService.touchJs(); PlayerService.audioPrev(); call.resolve(); }
+        catch (Exception e) { call.reject("audioPrev failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioStop(PluginCall call) {
+        try { PlayerService.touchJs(); PlayerService.audioStop(getContext()); call.resolve(); }
+        catch (Exception e) { call.reject("audioStop failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void audioPos(PluginCall call) {
+        try {
+            long[] pd = PlayerService.audioPos();
+            JSObject r = new JSObject();
+            r.put("pos", pd[0] / 1000.0);
+            r.put("dur", pd[1] / 1000.0);
+            r.put("playing", pd[2] == 1);
+            call.resolve(r);
+        } catch (Exception e) { call.reject("audioPos failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void nativeEQ(PluginCall call) {
+        try {
+            JSObject d = call.getData();
+            boolean on = d.optBoolean("on", false);
+            float[] bands = new float[10];
+            try {
+                com.getcapacitor.JSArray ba = d.getArray("bands");
+                if (ba != null) for (int i = 0; i < 10 && i < ba.length(); i++) bands[i] = (float) ba.getDouble(i);
+            } catch (Exception ignored) {}
+            float bass = (float) d.optDouble("bass", 0);
+            PlayerService.setEQ(on, bands, bass);
+            call.resolve();
+        } catch (Exception e) { call.reject("nativeEQ failed: " + e.getMessage()); }
     }
 
     @PluginMethod

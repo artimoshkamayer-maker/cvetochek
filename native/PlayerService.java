@@ -51,15 +51,17 @@ public class PlayerService extends Service {
     static Context appCtx;
     static ExoPlayer exo;
     static Equalizer sysEq;
+    static int eqSid = 0;
     static Handler loop;
-    static final Runnable loopTick = () -> {
+    static void loopTickRun() {
         try {
             if (exo != null && exo.isPlaying()) {
                 refreshNotification();
                 if (loop != null) loop.postDelayed(loopTick, 5000);
             }
         } catch (Throwable t) {}
-    };
+    }
+    static final Runnable loopTick = () -> loopTickRun();
     static class Track {
         String uri = "", title = "", artist = "";
         Track(String u, String t, String a) { uri = u == null ? "" : u; title = t == null ? "" : t; artist = a == null ? "" : a; }
@@ -326,9 +328,10 @@ public class PlayerService extends Service {
         try { sid = exo.getAudioSessionId(); } catch (Throwable t) { return; }
         if (sid == 0 || sid == C.AUDIO_SESSION_ID_UNSET) return;
         try {
-            if (sysEq == null || sysEq.getAudioSessionId() != sid) {
+            if (sysEq == null || eqSid != sid) {
                 if (sysEq != null) { try { sysEq.release(); } catch (Throwable t) {} sysEq = null; }
                 sysEq = new Equalizer(0, sid);
+                eqSid = sid;
             }
             sysEq.setEnabled(false);
             short nb = sysEq.getNumberOfBands();
