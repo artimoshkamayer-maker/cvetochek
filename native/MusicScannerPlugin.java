@@ -214,6 +214,23 @@ public class MusicScannerPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void audioState(PluginCall call) {
+        try {
+            org.json.JSONObject o = PlayerService.audioStateJson();
+            JSObject r = new JSObject();
+            r.put("playing", o.optBoolean("playing", false));
+            r.put("pos", o.optDouble("pos", 0));
+            r.put("dur", o.optDouble("dur", 0));
+            r.put("uri", o.optString("uri", ""));
+            r.put("index", o.optInt("index", -1));
+            r.put("count", o.optInt("count", 0));
+            r.put("repeat", o.optInt("repeat", 0));
+            r.put("queue", o.optJSONArray("queue"));
+            call.resolve(r);
+        } catch (Exception e) { call.reject("audioState failed: " + e.getMessage()); }
+    }
+
+    @PluginMethod
     public void nativeEQ(PluginCall call) {
         try {
             JSObject d = call.getData();

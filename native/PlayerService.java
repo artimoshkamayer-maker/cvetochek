@@ -78,10 +78,24 @@ public class PlayerService extends Service {
     static volatile long lastJsCall = 0;
     static volatile boolean lastPlaying = false;
     static MediaSessionCompat.Token sessionToken = null;
+    static MediaSessionCompat sessRef = null;
     static boolean eqOn = false;
     static final float[] eqBands = new float[10];
     static float eqBass = 0;
     static final float[] EQ_C = new float[]{31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000};
+
+    static void loadEQ() {
+        try {
+            android.content.SharedPreferences p = qprefs();
+            if (p == null) return;
+            eqOn = p.getBoolean("eqon", false);
+            eqBass = Math.max(-12, Math.min(12, p.getFloat("eqbass", 0)));
+            try {
+                org.json.JSONArray ba = new org.json.JSONArray(p.getString("eqbands", "[]"));
+                for (int i = 0; i < 10 && i < ba.length(); i++) eqBands[i] = Math.max(-12, Math.min(12, (float) ba.optDouble(i, 0)));
+            } catch (Throwable t) {}
+        } catch (Throwable t) {}
+    }
 
     static void touchJs() { lastJsCall = SystemClock.elapsedRealtime(); }
     static boolean jsRecent() { return SystemClock.elapsedRealtime() - lastJsCall < 3000; }
@@ -105,6 +119,7 @@ public class PlayerService extends Service {
             exo = new ExoPlayer.Builder(appCtx).build();
             exo.setAudioAttributes(aa, true);
             exo.setHandleAudioBecomingNoisy(true);
+            try { loadEQ(); applyEq(); } catch (Throwable t) {}
             exo.addListener(new Player.Listener() {
                 @Override public void onIsPlayingChanged(boolean playing) {
                     try { lastPlaying = playing; } catch (Throwable t) {}
@@ -298,6 +313,25 @@ public class PlayerService extends Service {
         } catch (Throwable t) {}
     }
 
+    public static org.json.JSONObject audioStateJson() {
+        try {
+            org.json.JSONObject o = new org.json.JSONObject();
+            long[] pd = audioPos();
+            o.put("playing", pd[2] == 1);
+            o.put("pos", pd[0] / 1000.0);
+            o.put("dur", pd[1] / 1000.0);
+            o.put("uri", cur == null || cur.uri == null ? "" : cur.uri);
+            o.put("index", qIndex);
+            o.put("count", queue.size());
+            o.put("repeat", repMode);
+            org.json.JSONArray qa = new org.json.JSONArray();
+            int cap = Math.min(queue.size(), 200);
+            for (int i = 0; i < cap; i++) { try { qa.put(queue.get(i).uri); } catch (Throwable t) {} }
+            o.put("queue", qa);
+            return o;
+        } catch (Throwable t) { return new org.json.JSONObject(); }
+    }
+
     // ---- public audio API (called from plugin bridge) ----
     public static synchronized void audioPlay(Context c, String uri, String title, String artist, String acc,
                                               boolean autoplay, List<Track> q, int idx, int rep) {
@@ -329,6 +363,7 @@ public class PlayerService extends Service {
         try {
             if (exo.isPlaying()) exo.pause(); else exo.play();
             try { lastPlaying = exo.isPlaying(); } catch (Throwable t) {}
+            try { refreshNotification(); } catch (Throwable t) {}
         } catch (Throwable t) {}
     }
     public static void audioPause() { if (exo != null) { try { exo.pause(); } catch (Throwable t) {} } try { lastPlaying = false; } catch (Throwable t) {} }
@@ -340,6 +375,7 @@ public class PlayerService extends Service {
             long ms = Math.max(0, sec * 1000L);
             if (d > 0) ms = Math.min(ms, d);
             exo.seekTo(ms);
+            try { savePos(); } catch (Throwable t) {}
             refreshNotification();
         } catch (Throwable t) {}
     }
@@ -364,6 +400,7 @@ public class PlayerService extends Service {
     public static void audioStop(Context c) {
         try { lastPlaying = false; } catch (Throwable t) {}
         try { if (exo != null) exo.pause(); } catch (Throwable t) {}
+        try { savePos(); } catch (Throwable t) {}
         try { if (loop != null) loop.removeCallbacks(loopTick); } catch (Throwable t) {}
         try { hide(c); } catch (Throwable t) {}
     }
@@ -385,6 +422,14 @@ public class PlayerService extends Service {
             for (int i = 0; i < 10 && i < bands.length; i++) eqBands[i] = Math.max(-12, Math.min(12, bands[i]));
         }
         eqBass = Math.max(-12, Math.min(12, bass));
+        try {
+            android.content.SharedPreferences p = qprefs();
+            if (p != null) {
+                org.json.JSONArray ba = new org.json.JSONArray();
+                for (int i = 0; i < 10; i++) { try { ba.put(eqBands[i]); } catch (Throwable t) {} }
+                p.edit().putBoolean("eqon", eqOn).putFloat("eqbass", eqBass).putString("eqbands", ba.toString()).apply();
+            }
+        } catch (Throwable t) {}
         try { applyEq(); } catch (Throwable t) {}
     }
     static float interpBand(float f) {
@@ -539,6 +584,7 @@ public class PlayerService extends Service {
         });
         session.setActive(true);
         try { sessionToken = session.getSessionToken(); } catch (Throwable t) {}
+        try { sessRef = session; } catch (Throwable t) {}
         try {
             wl = ((PowerManager) getSystemService(Context.POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "cvetochek:audio");
             wl.setReferenceCounted(false);
@@ -551,7 +597,26 @@ public class PlayerService extends Service {
     }
 
     static void updateSession() {
-        // session lives on the service instance; refresh happens in onStartCommand too.
+        try {
+            if (sessRef == null) return;
+            long[] pd = audioPos();
+            boolean playing = pd[2] == 1;
+            String title = "", artist = "";
+            try { if (cur != null) { title = cur.title == null ? "" : cur.title; artist = cur.artist == null ? "" : cur.artist; } } catch (Throwable t) {}
+            MediaMetadataCompat.Builder mb = new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, Math.max(0, pd[1]));
+            sessRef.setMetadata(mb.build());
+            int st = playing ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED;
+            float sp = playing ? 1f : 0f;
+            PlaybackStateCompat.Builder pb = new PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE
+                    | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                    | PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_STOP)
+                .setState(st, Math.max(0, pd[0]), sp);
+            sessRef.setPlaybackState(pb.build());
+        } catch (Throwable t) {}
     }
 
     private void syncSession(boolean playing, long posMs, long durMs, String title, String artist) {
@@ -647,6 +712,7 @@ public class PlayerService extends Service {
     public void onDestroy() {
         try { if (loop != null) loop.removeCallbacks(loopTick); } catch (Throwable t) {}
         try { if (session != null) { session.setActive(false); session.release(); } } catch (Throwable t) {}
+        try { sessRef = null; } catch (Throwable t) {}
         try { if (wl != null && wl.isHeld()) wl.release(); } catch (Throwable t) {}
         super.onDestroy();
     }
@@ -675,6 +741,7 @@ public class PlayerService extends Service {
         b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_media_previous, "prev", pi(ctx, "prev")).build());
         b.addAction(new NotificationCompat.Action.Builder(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, "tog", pi(ctx, "toggle")).build());
         b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_media_next, "next", pi(ctx, "next")).build());
+        b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_close_clear_cancel, "stop", pi(ctx, "stop")).build());
         return b.build();
     }
 
