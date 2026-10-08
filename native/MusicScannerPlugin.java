@@ -93,7 +93,7 @@ public class MusicScannerPlugin extends Plugin {
                 try {
                     JSObject d = new JSObject();
                     d.put("action", action);
-                    d.put("pos", posMs / 1000.0);
+                    d.put("pos", posMs);
                     notifyListeners("playerAction", d);
                 } catch (Exception ignored) {}
             }

@@ -4,8 +4,8 @@
 :root{--bg:#121016;--bg2:#1c1922;--card:#211e29;--card2:#282434;--txt:#fff;--mut:#a7a1b8;--acc:#0b84ff;--acc2:#00c9ff;--line:rgba(255,255,255,.08);--r:16px}
 body.light{--bg:#f4f2f7;--bg2:#fff;--card:#fff;--card2:#efeaf5;--txt:#16121d;--mut:#6f6880;--line:rgba(0,0,0,.08)}
 body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,-apple-system,'Segoe UI',Roboto,Arial;text-align:left;user-select:none}
-#app{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:150px}
-header.top{position:static;z-index:30;background:transparent;padding:14px 16px 8px}
+#app{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+header.top{position:static;z-index:30;background:transparent;padding:calc(14px + env(safe-area-inset-top)) 16px 8px}
 .logoRow{display:flex;align-items:center;gap:10px}
 .logo{width:38px;height:38px;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(11,132,255,.4)}.logo img{width:100%;height:100%;object-fit:cover;display:block}
 .logoRow b{font-size:19px;letter-spacing:.2px}.logoRow b span{color:var(--acc)}
@@ -38,20 +38,20 @@ header.top{position:static;z-index:30;background:transparent;padding:14px 16px 8
 .acard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center;cursor:pointer}
 .acard .cv{width:48px;height:48px}
 .acard b{display:block;font-size:13px}.acard span{font-size:12px;color:var(--mut)}
-#mini{position:fixed;left:50%;transform:translateX(-50%);bottom:74px;width:min(520px,calc(100% - 16px));background:var(--card2);border:1px solid var(--line);border-radius:16px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 8px;z-index:40;box-shadow:0 12px 30px rgba(0,0,0,.4);cursor:pointer}
+#mini{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));width:min(520px,calc(100% - 16px));background:var(--card2);border:1px solid var(--line);border-radius:16px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 8px;z-index:40;box-shadow:0 12px 30px rgba(0,0,0,.4);cursor:pointer}
 #mini .cv{width:48px;height:48px}
 #mini .tt{flex:1;min-width:0}#mini .tt b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mini .tt span{font-size:11px;color:var(--mut)}
 #miniBar{position:absolute;left:12px;right:12px;bottom:4px;height:3px;background:rgba(128,128,128,.3);border-radius:99px;overflow:hidden}
 #miniBar i{display:block;height:100%;background:var(--acc);width:0}
 #mini[hidden]{display:none}
-nav.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(520px,100%);background:color-mix(in srgb,var(--bg2) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;z-index:40;padding:0 4px 4px}
+nav.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(520px,100%);background:color-mix(in srgb,var(--bg2) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;z-index:40;padding:0 4px calc(4px + env(safe-area-inset-bottom))}
 nav.tabs button{flex:1;border:0;background:none;color:var(--mut);font-size:9px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;padding:4px}
 nav.tabs button span.i{font-size:17px}
 nav.tabs button.on{color:var(--acc);font-weight:700}
 .sheet{position:fixed;left:0;right:0;top:0;bottom:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet[hidden]{display:none}
 .sheet .bk{position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.55)}
-.sheet .pn{position:fixed;left:0;right:0;bottom:0;width:100%;max-width:520px;margin:0 auto;max-height:92vh;overflow-y:auto;background:var(--bg2);border-radius:22px 22px 0 0;padding:10px 16px 30px;animation:up .25s ease}
+.sheet .pn{position:fixed;left:0;right:0;bottom:0;width:100%;max-width:520px;margin:0 auto;max-height:92vh;overflow-y:auto;background:var(--bg2);border-radius:22px 22px 0 0;padding:10px 16px calc(30px + env(safe-area-inset-bottom));animation:up .25s ease}
 @keyframes up{from{transform:translateY(40px);opacity:.5}}
 .grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:6px auto 12px}
 #full .cover{width:min(300px,70vw);aspect-ratio:1;border-radius:24px;margin:8px auto;display:grid;place-items:center;font-size:90px;font-weight:800;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;overflow:hidden}
@@ -82,7 +82,7 @@ input[type=range].seek{width:100%;accent-color:var(--acc)}
 .btn.ghost{background:var(--card);color:var(--txt);border:1px solid var(--line)}
 .lyr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;white-space:pre-line;font-size:13px;max-height:260px;overflow-y:auto}
 .lyr .hl{color:var(--acc);font-weight:800}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;background:#000;color:#fff;padding:10px 16px;border-radius:99px;z-index:99;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom));background:#000;color:#fff;padding:10px 16px;border-radius:99px;z-index:99;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1}
 .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;margin:20px auto;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -213,7 +213,7 @@ dialog input{background:var(--card);border:1px solid var(--line);color:var(--txt
 
 <div class="sheet" id="eqSheet" hidden><div class="bk"></div><div class="pn">
 <div class="grab"></div>
-<div class="eqhead"><div class="eqico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#fff" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></div><div style="flex:1"><b data-i18n="eqTitle">Бас</b><br><small data-i18n="eqSub">усиление низких частот</small></div><label class="mswitch"><input type="checkbox" id="eqOn" checked><i></i></label></div>
+<div class="eqhead"><div class="eqico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="#fff" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></div><div style="flex:1"><b data-i18n="eqTitle">Бас</b><br><small data-i18n="eqSub">усиление низких частот</small></div><label class="mswitch"><input type="checkbox" id="eqOn"><i></i></label></div>
 <div class="fx"><div class="fx-top"><label><span data-i18n="bass">🔊 Усиление баса</span><small data-i18n="bassSub">низкие частоты</small></label><b class="val" id="bassL">0dB</b></div><input type="range" class="mx" id="bassEl" min="0" max="12" value="0"></div>
 </div>
 
@@ -261,10 +261,11 @@ const cvLetter=t=>((t||'♪').trim()[0]||'♪').toUpperCase();
 const DEMO=[];
 const LYR=(t,a)=>`[00:00] ${t} — ${a}\n[00:05] Lights on, the city glows\n[00:12] Every beat, the rhythm flows\n[00:19] Sing it loud, let the music play\n[00:26] Dancing all night till break of day\n[00:33] (instrumental…)\n[00:45] Turn it up to 100 percent\n[01:00] Feel the bass, feel the moment\n[01:20] This is our favorite song\n[01:40] We keep singing all night long`;
 
-let S={lib:[],tab:'songs',q:'',queue:[],qi:-1,shuf:false,rep:0,fav:[],pl:{},plays:{},playSec:{},recent:[],noSave:true,theme:'sys',lang:'ru',acc:'#0b84ff',eq:{on:true,bands:[0,0,0,0,0],boost:100,bass:0,virt:0,rev:0,pre:'Custom'},cut:{s:0,e:30}};
+let S={lib:[],tab:'songs',q:'',queue:[],qi:-1,shuf:false,rep:0,fav:[],pl:{},plays:{},playSec:{},recent:[],noSave:true,theme:'sys',lang:'ru',acc:'#0b84ff',eq:{on:false,bands:[0,0,0,0,0],boost:100,bass:0,virt:0,rev:0,pre:'Custom'},cut:{s:0,e:30}};
 try{Object.assign(S,JSON.parse(localStorage.getItem('audify1')||'{}'))}catch(e){}
 S.noSave=true;
 S.theme='sys';
+if(S.eq)S.eq.on=false;
 if(S.eq&&S.eq.bass>12)S.eq.bass=12;
 if(!S.playSec)S.playSec={};
 const save=()=>{try{const o={...S};delete o.lib;localStorage.setItem('audify1',JSON.stringify(o))}catch(e){}};
@@ -299,8 +300,8 @@ for(let i=0;i<metas.length;i+=4){await Promise.all(metas.slice(i,i+4).map(batch)
  }catch(e){}
 renderAll();
 try{if(capCacheLoad()>0)renderAll()}catch(e){}
-capScan(true).then(()=>{restoreLast()}).catch(()=>{restoreLast()});
-autoScanDir().then(n=>{if(n)renderAll();restoreLast()}).catch(()=>{restoreLast()});
+capScan(true).then(()=>{try{stableOrder()}catch(e){}restoreLast()}).catch(()=>{restoreLast()});
+autoScanDir().then(n=>{try{stableOrder()}catch(e){}if(n)renderAll();restoreLast()}).catch(()=>{restoreLast()});
 setTimeout(()=>{try{restoreLast()}catch(e){}},8000);
 })();
 
@@ -327,11 +328,11 @@ applyEQ();
 }catch(e){}
 }
 function applyEQ(){
+try{const P0=capPlugin();if(P0&&P0.nativeEQ){const e0=S.eq||{on:false,bands:[],bass:0};const nq=P0.nativeEQ({on:!!e0.on,bands:(e0.bands||[]).map(v=>+v||0),bass:Math.min(12,+(e0.bass||0))});if(nq&&nq.catch)nq.catch(()=>{})}}catch(_){}
 if(!nodes)return;const e=S.eq;
 if(!Array.isArray(e.bands)||e.bands.length!==10){e.bands=[0,0,0,0,0,0,0,0,0,0];e.pre='Custom'}
 nodes.bass.gain.value=e.on?Math.min(12,e.bass||0):0;
 try{const mx=e.on?Math.min(12,e.bass||0):0;nodes.pre.gain.value=Math.pow(10,-Math.max(0,mx)/20)}catch(_){nodes.pre.gain.value=1}
-try{const P=capPlugin();if(P&&P.nativeEQ){const nq=P.nativeEQ({on:!!e.on,bands:(e.bands||[]).map(v=>+v||0),bass:Math.min(12,+(e.bass||0))});if(nq&&nq.catch)nq.catch(()=>{})}}catch(_){}
 }
 au.addEventListener('play',()=>{audioGraph();AC&&AC.resume&&AC.resume()});
 
@@ -343,8 +344,8 @@ $('libChips').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{S.tab=c.datase
 function filtered(){const q=S.q.trim().toLowerCase();return S.lib.filter(t=>!q||(t.title+' '+t.artist+' '+t.album+' '+t.genre).toLowerCase().includes(q))}
 function cur(){return S.lib.find(t=>t.id===S.queue[S.qi])||null}
 function group(k){const m={};filtered().forEach(t=>{const key=t[k]||'Unknown';(m[key]=m[key]||[]).push(t)});return Object.entries(m).sort((a,b)=>b[1].length-a[1].length)}
-function shuffleLib(){try{for(let i=S.lib.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const x=S.lib[i];S.lib[i]=S.lib[j];S.lib[j]=x}}catch(e){}}
-function topTracks(){try{const ps=S.playSec||{},pl=S.plays||{};return S.lib.map(t=>({t,s:(pl[t.id]||0)*60+(ps[t.id]||0)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).map(x=>x.t)}catch(e){return[]}}
+function stableOrder(){try{if(!S.libOrderInit){for(let i=S.lib.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const x=S.lib[i];S.lib[i]=S.lib[j];S.lib[j]=x}S.libOrder=S.lib.map(t=>t.id);S.libOrderInit=true;save()}else{const pos=new Map((S.libOrder||[]).map((id,i)=>[id,i]));for(const t of S.lib){if(!pos.has(t.id))pos.set(t.id,pos.size)}S.lib.sort((a,b)=>pos.get(a.id)-pos.get(b.id));const now=S.lib.map(t=>t.id);if(now.length!==(S.libOrder||[]).length||now.some((id,i)=>id!==S.libOrder[i])){S.libOrder=now;save()}}}catch(e){}}
+function topTracks(){try{const ps=S.playSec||{},pl=S.plays||{};return S.lib.map(t=>({t,pl:(pl[t.id]||0),sec:(ps[t.id]||0),s:(pl[t.id]||0)*60+(ps[t.id]||0)})).filter(x=>x.pl>=2||x.sec>=30).sort((a,b)=>b.s-a.s).map(x=>x.t)}catch(e){return[]}}
 
 function rowHTML(t,i,showArt){
 const fav=(_favSet?_favSet.has(t.id):S.fav.includes(t.id))?'❤️':'🤍';
@@ -459,7 +460,7 @@ async ensure(id){try{const t=S.lib.find(x=>x.id===id);if(!t||t.nativeUri)return 
 async cachePlay(id,autoplay){const tk=++NAP._upTk;try{toast(T('caching'))}catch(e){}try{const uri=await NAP.ensure(id);if(tk!==NAP._upTk)return;const t=S.lib.find(x=>x.id===id);if(!t||!uri){try{toast(T('noAudio'))}catch(e){}return}if(cur()&&cur().id===id){if(NAP.send(autoplay)){try{toast(T('cached'))}catch(e){}try{syncPlayer()}catch(e){}try{renderAll()}catch(e){}try{capPlayerSync()}catch(e){}}}}catch(e){try{toast(T('noAudio'))}catch(e){}}}};
 function napCur(){try{const t=cur();const P=capPlugin();return (t&&napUri(t)&&P&&P.audioPlay)?{t:t,P:P}:null}catch(e){return null}}
 function napToggle(){const n=napCur();if(n){try{const pr=n.P.audioToggle();if(pr&&pr.catch)pr.catch(()=>{})}catch(e){}NAP.st.playing=!NAP.st.playing;NAP.paint();return true}return false}
-function napSeek(v){const n=napCur();if(n&&isFinite(v)){v=Math.max(0,v);try{const pr=n.P.audioSeek(Math.round(v));if(pr&&pr.catch)pr.catch(()=>{})}catch(e){}NAP.st.pos=v;NAP.paint();return true}return false}
+function napSeek(v){const n=napCur();if(n&&isFinite(v)){v=Math.max(0,v);try{const pr=n.P.audioSeek({sec:Math.round(v)});if(pr&&pr.catch)pr.catch(()=>{})}catch(e){}NAP.st.pos=v;NAP.paint();return true}return false}
 function napEnded(){if(S.qi<S.queue.length-1){S.qi++;loadCur(true)}else if(S.rep===1){S.qi=0;loadCur(true)}else{try{syncPlayer()}catch(e){}try{renderAll()}catch(e){}}}
 function playIds(ids,start=0){
 if(!ids.length)return;
@@ -505,7 +506,7 @@ q.querySelectorAll('[data-q]').forEach(r=>r.onclick=()=>{S.qi=+r.dataset.q;loadC
 
 let _restored=false,_posT=0,_tickId='',_tickT=0;
 function rememberPos(){try{const t=cur();if(!t)return;let p=0;try{p=(napUri(t)?NAP.st.pos:AU().currentTime)||0}catch(e){}if(!isFinite(p)||p<0)p=0;S.lastPos={id:t.id,pos:p};save()}catch(e){}}
-function restoreLast(){if(_restored)return;_restored=true;try{shuffleLib()}catch(e){}try{renderAll()}catch(e){}try{const q=S.queue||[];if(!q.length||S.qi<0||S.qi>=q.length)return;const t=S.lib.find(x=>x.id===q[S.qi]);if(!t)return;const _rnu0=napUri(t);const _blobDead=!t.url||t.url.indexOf('blob:')===0;if(_blobDead&&!_rnu0)return;if(_rnu0){try{const P=capPlugin();if(P&&P.audioPlay){try{au.pause()}catch(e){}try{auNet.pause()}catch(e){}if(NAP.send(false)){const pp=+((S.lastPos&&S.lastPos.id===t.id)?S.lastPos.pos:0)||0;if(pp>1){try{P.audioSeek(Math.round(pp)).catch(()=>{})}catch(e){}NAP.st.pos=pp}NAP.paint();syncPlayer();renderAll();try{capPlayerSync()}catch(e){}}}}catch(e){}return}const a=AU();try{a.src=t.url;a.playbackRate=1}catch(e){}const p=+((S.lastPos&&S.lastPos.id===t.id)?S.lastPos.pos:0)||0;const apply=()=>{try{if(p>1&&isFinite(a.duration)&&a.duration>5)a.currentTime=Math.min(p,Math.max(0,a.duration-1))}catch(e){}};try{a.addEventListener('loadedmetadata',apply,{once:true})}catch(e){}syncPlayer();renderAll();try{capPlayerSync()}catch(e){}}catch(e){}}
+function restoreLast(){if(_restored)return;_restored=true;try{stableOrder()}catch(e){}try{renderAll()}catch(e){}try{const q=S.queue||[];if(!q.length||S.qi<0||S.qi>=q.length)return;const t=S.lib.find(x=>x.id===q[S.qi]);if(!t)return;const _rnu0=napUri(t);const _blobDead=!t.url||t.url.indexOf('blob:')===0;if(_blobDead&&!_rnu0)return;if(_rnu0){try{const P=capPlugin();if(P&&P.audioPlay){try{au.pause()}catch(e){}try{auNet.pause()}catch(e){}if(NAP.send(false)){const pp=+((S.lastPos&&S.lastPos.id===t.id)?S.lastPos.pos:0)||0;if(pp>1){try{P.audioSeek({sec:Math.round(pp)}).catch(()=>{})}catch(e){}NAP.st.pos=pp}NAP.paint();syncPlayer();renderAll();try{capPlayerSync()}catch(e){}}}}catch(e){}return}const a=AU();try{a.src=t.url;a.playbackRate=1}catch(e){}const p=+((S.lastPos&&S.lastPos.id===t.id)?S.lastPos.pos:0)||0;const apply=()=>{try{if(p>1&&isFinite(a.duration)&&a.duration>5)a.currentTime=Math.min(p,Math.max(0,a.duration-1))}catch(e){}};try{a.addEventListener('loadedmetadata',apply,{once:true})}catch(e){}syncPlayer();renderAll();try{capPlayerSync()}catch(e){}}catch(e){}}
 au.addEventListener('pause',rememberPos);auNet.addEventListener('pause',rememberPos);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){try{rememberPos()}catch(e){}}});
 addEventListener('pagehide',()=>{try{rememberPos()}catch(e){}try{AU().pause()}catch(e){}});
@@ -533,7 +534,7 @@ $('miniPlay').onclick=e=>{e.stopPropagation();if(napToggle())return;const a=AU()
 $('nextBtn').onclick=next;$('miniNext').onclick=e=>{e.stopPropagation();next()};
 $('prevBtn').onclick=prev;$('miniPrev').onclick=e=>{e.stopPropagation();prev()};
 function next(){if(!S.queue.length)return;if(S.qi<S.queue.length-1)S.qi++;else if(S.rep===1)S.qi=0;else return;loadCur(true)}
-function prev(){try{const t=cur();const P=capPlugin();if(t&&napUri(t)&&P&&P.audioSeek&&NAP.pollT){if((NAP.st.pos||0)>3){P.audioSeek(0).catch(()=>{});NAP.st.pos=0;NAP.paint();return}}}catch(e){}const a=AU();if(a.currentTime>3){a.currentTime=0;return}if(S.qi>0)S.qi--;loadCur(true)}
+function prev(){try{const t=cur();const P=capPlugin();if(t&&napUri(t)&&P&&P.audioSeek&&NAP.pollT){if((NAP.st.pos||0)>3){P.audioSeek({sec:0}).catch(()=>{});NAP.st.pos=0;NAP.paint();return}}}catch(e){}const a=AU();if(a.currentTime>3){a.currentTime=0;return}if(S.qi>0)S.qi--;loadCur(true)}
 $('shufBtn').onclick=()=>{S.shuf=!S.shuf;save();syncPlayer();toast(S.shuf?T('shufOn'):T('shufOff'))};
 $('repBtn').onclick=()=>{S.rep=(S.rep+1)%3;save();syncPlayer();toast([T('repOff'),T('repAll'),T('repOne')][S.rep])};
 $('mini').onclick=()=>openSheet('full');
@@ -554,7 +555,7 @@ function paintRange(el){const min=+el.min||0,max=+el.max||0,v=+el.value||0;const
 function paintRanges(){document.querySelectorAll('#eqSheet input.mx').forEach(paintRange)}
 $('eqSheet').addEventListener('input',e=>{if(e.target&&e.target.classList&&e.target.classList.contains('mx'))paintRange(e.target)});
 $('eqOn').onchange=e=>{S.eq.on=e.target.checked;save();applyEQ()};
-$('bassEl').oninput=e=>{S.eq.bass=+e.target.value;$('bassL').textContent=S.eq.bass+'dB';S.eq.pre='Custom';save();renderEQ();applyEQ()};
+$('bassEl').oninput=e=>{S.eq.bass=+e.target.value;if(!S.eq.on){S.eq.on=true;try{$('eqOn').checked=true}catch(_){}}$('bassL').textContent=S.eq.bass+'dB';S.eq.pre='Custom';save();renderEQ();applyEQ()};
 $('eqTopBtn').onclick=()=>{renderEQ();openSheet('eqSheet')};
 if($('setX'))$('setX').onclick=()=>closeSheet('setSheet');
 if($('vidX'))$('vidX').onclick=()=>closeSheet('vidSheet');
