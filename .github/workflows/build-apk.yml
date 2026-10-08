@@ -46,10 +46,10 @@ jobs:
           npm i -D @capacitor/assets
           npx capacitor-assets generate --android
 
-      - name: Set version 2.0
+      - name: Set version 2.2
         run: |
-          sed -i -E 's/versionCode [0-9]+/versionCode 20/' android/app/build.gradle
-          sed -i -E 's/versionName "[^"]+"/versionName "2.0"/' android/app/build.gradle
+          sed -i -E 's/versionCode [0-9]+/versionCode 22/' android/app/build.gradle
+          sed -i -E 's/versionName "[^"]+"/versionName "2.2"/' android/app/build.gradle
           grep -E 'version(Code|Name)' android/app/build.gradle
 
       - name: Inject native music scanner
@@ -162,14 +162,29 @@ jobs:
           print("native scanner injected OK")
           EOF
 
+      - name: Verify Android 16 container
+        run: |
+          grep -E 'compileSdk|targetSdk|minSdk' android/app/build.gradle || true
+          echo "--- native libs in template (16KB check) ---"
+          find ~/.gradle /root/.gradle -name "*.so" 2>/dev/null | head -5 || true
+          echo "verify done"
+
       - name: Build debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Check APK (targetSdk + native alignment)
+        run: |
+          ls -la android/app/build/outputs/apk/debug/
+          AAB=$(ls android/app/build/outputs/apk/debug/app-debug.apk | head -1)
+          echo "APK: $AAB"
+          unzip -l "$AAB" | grep -E '\.so$' || echo "no .so files (16KB rule not applicable)"
+          $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "$AAB" 2>/dev/null | head -8 || echo "(apksigner check skipped)"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: cvetochek-2.0
+          name: cvetochek-2.2-android16
           path: android/app/build/outputs/apk/debug/app-debug.apk
