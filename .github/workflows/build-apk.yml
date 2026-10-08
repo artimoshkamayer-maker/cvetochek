@@ -46,10 +46,10 @@ jobs:
           npm i -D @capacitor/assets
           npx capacitor-assets generate --android
 
-      - name: Set version 2.2
+      - name: Set version 2.3
         run: |
-          sed -i -E 's/versionCode [0-9]+/versionCode 22/' android/app/build.gradle
-          sed -i -E 's/versionName "[^"]+"/versionName "2.2"/' android/app/build.gradle
+          sed -i -E 's/versionCode [0-9]+/versionCode 23/' android/app/build.gradle
+          sed -i -E 's/versionName "[^"]+"/versionName "2.3"/' android/app/build.gradle
           grep -E 'version(Code|Name)' android/app/build.gradle
 
       - name: Inject native music scanner
@@ -119,7 +119,6 @@ jobs:
           ns = "{http://schemas.android.com/apk/res/android}"
           have = {e.get(ns + "name") for e in r.findall("uses-permission")}
           need = [("android.permission.READ_MEDIA_AUDIO", {}),
-                  ("android.permission.READ_MEDIA_VIDEO", {}),
                   ("android.permission.READ_EXTERNAL_STORAGE", {"android:maxSdkVersion": "32"}),
                   ("android.permission.POST_NOTIFICATIONS", {}),
                   ("android.permission.FOREGROUND_SERVICE", {}),
@@ -186,5 +185,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: cvetochek-2.2-android16
+          name: cvetochek-2.3
           path: android/app/build/outputs/apk/debug/app-debug.apk

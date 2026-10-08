@@ -21,7 +21,6 @@ import com.getcapacitor.annotation.PermissionCallback;
     name = "MusicScanner",
     permissions = {
         @Permission(alias = "audio", strings = { Manifest.permission.READ_MEDIA_AUDIO }),
-        @Permission(alias = "video", strings = { Manifest.permission.READ_MEDIA_VIDEO }),
         @Permission(alias = "storage", strings = { Manifest.permission.READ_EXTERNAL_STORAGE }),
         @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS })
     }
@@ -240,6 +239,95 @@ public class MusicScannerPlugin extends Plugin {
         }
     }
 
+    @PluginMethod
+    public void cacheOpen(PluginCall call) {
+        try {
+            String name = call.getData().optString("name", "track.mp3");
+            name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+            if (name.isEmpty()) name = "track.mp3";
+            java.io.File dir = new java.io.File(getContext().getCacheDir(), "upload-audio");
+            try { dir.mkdirs(); } catch (Exception ignored) {}
+            trimCache(dir, 200L * 1024L * 1024L);
+            java.io.File f = new java.io.File(dir, System.currentTimeMillis() + "-" + name);
+            try {
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(f, false);
+                try { fos.close(); } catch (Exception ignored) {}
+            } catch (Exception e) {
+                call.reject("cache open failed: " + e.getMessage());
+                return;
+            }
+            JSObject r = new JSObject();
+            r.put("path", f.getAbsolutePath());
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("cacheOpen failed: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void cacheChunk(PluginCall call) {
+        try {
+            String path = call.getData().optString("path", "");
+            String data = call.getData().optString("data", "");
+            if (path.isEmpty() || data.isEmpty()) {
+                call.reject("bad args");
+                return;
+            }
+            byte[] raw;
+            try {
+                raw = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
+            } catch (Exception e) {
+                call.reject("base64 failed: " + e.getMessage());
+                return;
+            }
+            try {
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(path, true);
+                try { fos.write(raw); } finally { try { fos.close(); } catch (Exception ignored) {} }
+            } catch (Exception e) {
+                call.reject("cache write failed: " + e.getMessage());
+                return;
+            }
+            JSObject r = new JSObject();
+            r.put("ok", true);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("cacheChunk failed: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void cacheDone(PluginCall call) {
+        try {
+            String path = call.getData().optString("path", "");
+            java.io.File f = new java.io.File(path);
+            if (path.isEmpty() || !f.exists()) {
+                call.reject("file missing");
+                return;
+            }
+            JSObject r = new JSObject();
+            r.put("uri", android.net.Uri.fromFile(f).toString());
+            r.put("size", f.length());
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("cacheDone failed: " + e.getMessage());
+        }
+    }
+
+    private void trimCache(java.io.File dir, long maxBytes) {
+        try {
+            java.io.File[] fs = dir.listFiles();
+            if (fs == null || fs.length < 2) return;
+            long total = 0;
+            for (java.io.File f : fs) total += f.length();
+            if (total <= maxBytes) return;
+            java.util.Arrays.sort(fs, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+            for (java.io.File f : fs) {
+                if (total <= maxBytes) break;
+                try { total -= f.length(); f.delete(); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void doScan(PluginCall call) {
         JSArray arr = new JSArray();
         Cursor c = null;
@@ -290,62 +378,4 @@ public class MusicScannerPlugin extends Plugin {
             }
         }
     }
-    @PluginMethod
-    public void scanVideos(PluginCall call) {
-        String alias = Build.VERSION.SDK_INT >= 33 ? "video" : "storage";
-        try {
-            if (getPermissionState(alias) == PermissionState.GRANTED) {
-                doScanVideos(call);
-            } else {
-                requestPermissionForAlias(alias, call, "onVideoPerm");
-            }
-        } catch (Exception e) {
-            call.reject("permission error: " + e.getMessage());
-        }
     }
-
-    @PermissionCallback
-    private void onVideoPerm(PluginCall call) {
-        doScanVideos(call);
-    }
-
-    private void doScanVideos(PluginCall call) {
-        JSArray arr = new JSArray();
-        Cursor c = null;
-        try {
-            ContentResolver cr = getContext().getContentResolver();
-            Uri base = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-            String[] proj = new String[] {
-                MediaStore.Video.Media._ID,
-                MediaStore.Video.Media.DISPLAY_NAME,
-                MediaStore.Video.Media.SIZE
-            };
-            String sel = MediaStore.Video.Media.SIZE + " > ?";
-            String[] args = new String[] { "100000" };
-            c = cr.query(base, proj, sel, args, MediaStore.Video.Media.DISPLAY_NAME + " ASC");
-            if (c != null) {
-                int iId = c.getColumnIndex(MediaStore.Video.Media._ID);
-                int iName = c.getColumnIndex(MediaStore.Video.Media.DISPLAY_NAME);
-                int iSize = c.getColumnIndex(MediaStore.Video.Media.SIZE);
-                while (c.moveToNext() && arr.length() < MAX_TRACKS) {
-                    long id = c.getLong(iId);
-                    JSObject o = new JSObject();
-                    o.put("id", id);
-                    o.put("uri", Uri.withAppendedPath(base, String.valueOf(id)).toString());
-                    o.put("name", c.getString(iName));
-                    o.put("size", iSize >= 0 ? c.getLong(iSize) : 0);
-                    arr.put(o);
-                }
-            }
-            JSObject ret = new JSObject();
-            ret.put("videos", arr);
-            call.resolve(ret);
-        } catch (Exception e) {
-            call.reject("scanVideos failed: " + e.getMessage());
-        } finally {
-            if (c != null) {
-                try { c.close(); } catch (Exception ignored) {}
-            }
-        }
-    }
-}

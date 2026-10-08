@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -56,6 +57,7 @@ public class PlayerService extends Service {
     static void loopTickRun() {
         try {
             if (exo != null && exo.isPlaying()) {
+                try { savePos(); } catch (Throwable t) {}
                 refreshNotification();
                 if (loop != null) loop.postDelayed(loopTick, 5000);
             }
@@ -74,6 +76,8 @@ public class PlayerService extends Service {
     static boolean lastFav = false;
     static String lastLetter = "?";
     static volatile long lastJsCall = 0;
+    static volatile boolean lastPlaying = false;
+    static MediaSessionCompat.Token sessionToken = null;
     static boolean eqOn = false;
     static final float[] eqBands = new float[10];
     static float eqBass = 0;
@@ -103,6 +107,7 @@ public class PlayerService extends Service {
             exo.setHandleAudioBecomingNoisy(true);
             exo.addListener(new Player.Listener() {
                 @Override public void onIsPlayingChanged(boolean playing) {
+                    try { lastPlaying = playing; } catch (Throwable t) {}
                     try { applyEq(); } catch (Throwable t) {}
                     try { updateSession(); } catch (Throwable t) {}
                     try { refreshNotification(); } catch (Throwable t) {}
@@ -217,6 +222,7 @@ public class PlayerService extends Service {
             applyEq();
             refreshNotification();
             fireTrack();
+            try { saveQueue(); } catch (Throwable th2) {}
         } catch (Throwable th) {}
     }
 
@@ -224,6 +230,71 @@ public class PlayerService extends Service {
         try {
             ActionSink s = sink;
             if (s != null) s.onEvent("track", qIndex);
+        } catch (Throwable t) {}
+    }
+
+    // ---- swipe-proof queue persistence (statics die with the process) ----
+    static final String QPREF = "cvetq";
+    static android.content.SharedPreferences qprefs() {
+        try { return appCtx.getSharedPreferences(QPREF, Context.MODE_PRIVATE); } catch (Throwable t) { return null; }
+    }
+    static synchronized void saveQueue() {
+        try {
+            android.content.SharedPreferences p = qprefs();
+            if (p == null) return;
+            JSONArray qa = new JSONArray();
+            int cap = Math.min(queue.size(), 200);
+            for (int i = 0; i < cap; i++) {
+                try { Track t = queue.get(i); JSONObject o = new JSONObject(); o.put("u", t.uri); o.put("t", t.title); o.put("a", t.artist); qa.put(o); } catch (Throwable t) {}
+            }
+            long pos = 0;
+            try { if (exo != null) pos = Math.max(0, exo.getCurrentPosition()); } catch (Throwable t) {}
+            p.edit().putString("q", qa.toString()).putInt("i", qIndex).putInt("r", repMode).putBoolean("p", lastPlaying).putLong("pos", pos).apply();
+        } catch (Throwable t) {}
+    }
+    static void savePos() {
+        try {
+            android.content.SharedPreferences p = qprefs();
+            if (p == null || exo == null) return;
+            p.edit().putLong("pos", Math.max(0, exo.getCurrentPosition())).putBoolean("p", exo.isPlaying()).apply();
+        } catch (Throwable t) {}
+    }
+    static long savedPos() {
+        try { android.content.SharedPreferences p = qprefs(); return p == null ? 0 : Math.max(0, p.getLong("pos", 0)); } catch (Throwable t) { return 0; }
+    }
+    static synchronized boolean restoreQueue() {
+        try {
+            android.content.SharedPreferences p = qprefs();
+            if (p == null) return false;
+            String s = p.getString("q", "");
+            if (s == null || s.isEmpty()) return false;
+            JSONArray qa = new JSONArray(s);
+            if (qa.length() == 0) return false;
+            queue.clear();
+            for (int i = 0; i < qa.length(); i++) {
+                try { JSONObject o = qa.getJSONObject(i); queue.add(new Track(o.optString("u", ""), o.optString("t", ""), o.optString("a", ""))); } catch (Throwable t) {}
+            }
+            if (queue.isEmpty()) return false;
+            qIndex = Math.max(0, Math.min(p.getInt("i", 0), queue.size() - 1));
+            repMode = p.getInt("r", 0);
+            lastPlaying = p.getBoolean("p", false);
+            try { cur = queue.get(qIndex); } catch (Throwable t) {}
+            return true;
+        } catch (Throwable t) { return false; }
+    }
+    static synchronized void resumeRestored() {
+        try {
+            if (exo == null || queue.isEmpty() || !lastPlaying || exo.isPlaying()) return;
+            int idx = Math.max(0, Math.min(qIndex, queue.size() - 1));
+            Track t = queue.get(idx);
+            if (!playable(t.uri)) { stepQueue(1, true); return; }
+            qIndex = idx;
+            cur = t;
+            exo.setMediaItem(MediaItem.fromUri(t.uri));
+            exo.prepare();
+            try { long sp = savedPos(); if (sp > 0) exo.seekTo(sp); } catch (Throwable th) {}
+            exo.setPlayWhenReady(true);
+            applyEq();
         } catch (Throwable t) {}
     }
 
@@ -241,6 +312,7 @@ public class PlayerService extends Service {
             if (qt.uri.equals(uri)) cur = qt;
         }
         if (!playable(uri)) { try { applyEq(); } catch (Throwable t) {} return; }
+        try { lastPlaying = autoplay; } catch (Throwable t) {}
         try {
             exo.setMediaItem(MediaItem.fromUri(uri));
             exo.prepare();
@@ -248,6 +320,7 @@ public class PlayerService extends Service {
             exo.setPlayWhenReady(autoplay);
             applyEq();
             refreshNotification();
+            try { saveQueue(); } catch (Throwable t) {}
         } catch (Throwable t) {}
     }
     public static void audioToggle() {
@@ -255,10 +328,11 @@ public class PlayerService extends Service {
         if (exo == null) return;
         try {
             if (exo.isPlaying()) exo.pause(); else exo.play();
+            try { lastPlaying = exo.isPlaying(); } catch (Throwable t) {}
         } catch (Throwable t) {}
     }
-    public static void audioPause() { if (exo != null) { try { exo.pause(); } catch (Throwable t) {} } }
-    public static void audioResume() { if (exo != null) { try { exo.play(); } catch (Throwable t) {} } }
+    public static void audioPause() { if (exo != null) { try { exo.pause(); } catch (Throwable t) {} } try { lastPlaying = false; } catch (Throwable t) {} }
+    public static void audioResume() { if (exo != null) { try { exo.play(); } catch (Throwable t) {} } try { if (exo != null) lastPlaying = exo.isPlaying(); } catch (Throwable t) {} }
     public static void audioSeek(int sec) {
         if (exo == null) return;
         try {
@@ -288,6 +362,7 @@ public class PlayerService extends Service {
         } catch (Throwable t) {}
     }
     public static void audioStop(Context c) {
+        try { lastPlaying = false; } catch (Throwable t) {}
         try { if (exo != null) exo.pause(); } catch (Throwable t) {}
         try { if (loop != null) loop.removeCallbacks(loopTick); } catch (Throwable t) {}
         try { hide(c); } catch (Throwable t) {}
@@ -324,6 +399,7 @@ public class PlayerService extends Service {
     }
     static synchronized void applyEq() {
         if (exo == null) return;
+        try { exo.setVolume(eqOn ? (float)Math.pow(10, -Math.max(0, Math.min(12, eqBass)) / 20.0) : 1f); } catch (Throwable t) {}
         int sid;
         try { sid = exo.getAudioSessionId(); } catch (Throwable t) { return; }
         if (sid == 0 || sid == C.AUDIO_SESSION_ID_UNSET) return;
@@ -366,6 +442,7 @@ public class PlayerService extends Service {
                             String acc, int fav, String letter, String artUri, String pkg) {
         Context ctx = c.getApplicationContext();
         appCtx = ctx;
+        try { lastPlaying = playing; } catch (Throwable t) {}
         if (acc != null && !acc.isEmpty()) lastAcc = acc;
         lastFav = fav == 1;
         lastLetter = (letter == null || letter.isEmpty()) ? "?" : letter;
@@ -395,22 +472,20 @@ public class PlayerService extends Service {
             PendingIntent ci = PendingIntent.getActivity(ctx, 100, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             Notification n = buildFull(ctx, ci, title, artist, playing, posMs, durMs, lastAcc, lastFav ? 1 : 0, lastLetter, artUri);
             try { nm.notify(NID, n); } catch (Throwable t) {}
-            if (Build.VERSION.SDK_INT >= 29) {
-                try { ctx.startForegroundService(new Intent(ctx, PlayerService.class)); } catch (Throwable t) {}
-            }
-            try { ctx.startService(new Intent(ctx, PlayerService.class)); } catch (Throwable t) {}
             try {
                 Intent fs = new Intent(ctx, PlayerService.class);
                 fs.putExtra("n_title", title); fs.putExtra("n_artist", artist);
                 fs.putExtra("n_playing", playing); fs.putExtra("n_pos", posMs); fs.putExtra("n_dur", durMs);
                 fs.putExtra("n_acc", lastAcc); fs.putExtra("n_fav", lastFav ? 1 : 0);
                 fs.putExtra("n_letter", lastLetter); fs.putExtra("n_art", artUri == null ? "" : artUri);
-                ctx.startService(fs);
+                if (Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(fs);
+                else ctx.startService(fs);
             } catch (Throwable t) {}
         } catch (Throwable t) {}
     }
 
     public static void hide(Context c) {
+        try { lastPlaying = false; } catch (Throwable t) {}
         try {
             Context ctx = c.getApplicationContext();
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -440,6 +515,7 @@ public class PlayerService extends Service {
     public void onCreate() {
         super.onCreate();
         try { ensurePlayer(this); } catch (Throwable t) {}
+        try { if (queue.isEmpty()) restoreQueue(); } catch (Throwable t) {}
         try {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (Build.VERSION.SDK_INT >= 26) {
@@ -462,6 +538,7 @@ public class PlayerService extends Service {
             @Override public void onSeekTo(long pos) { audioSeek((int)(pos / 1000)); }
         });
         session.setActive(true);
+        try { sessionToken = session.getSessionToken(); } catch (Throwable t) {}
         try {
             wl = ((PowerManager) getSystemService(Context.POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "cvetochek:audio");
             wl.setReferenceCounted(false);
@@ -498,6 +575,8 @@ public class PlayerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try { ensurePlayer(this); } catch (Throwable t) {}
+        try { if (queue.isEmpty()) restoreQueue(); } catch (Throwable t) {}
+        try { if (intent == null || intent.getStringExtra(ACT) == null) resumeRestored(); } catch (Throwable t) {}
         String title = null, artist = null, acc = null, letter = null, art = null;
         boolean playing = true; long pos = 0, dur = 0; int fav = 0;
         if (intent != null) {
@@ -536,7 +615,12 @@ public class PlayerService extends Service {
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             PendingIntent ci = PendingIntent.getActivity(this, 100, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             Notification n = buildFull(this, ci, title, artist, playing, pos, dur, acc, fav, letter, art);
-            startForeground(NID, n);
+            if (Build.VERSION.SDK_INT >= 29) {
+                try { startForeground(NID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK); }
+                catch (Throwable t) { try { startForeground(NID, n); } catch (Throwable t2) {} }
+            } else {
+                try { startForeground(NID, n); } catch (Throwable t) {}
+            }
             try {
                 if (wl != null && !wl.isHeld()) wl.acquire(10 * 60 * 1000L);
             } catch (Throwable t) {}
@@ -548,7 +632,9 @@ public class PlayerService extends Service {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         try {
-            if (exo != null && exo.isPlaying()) {
+            boolean playingNow = false;
+            try { playingNow = (exo != null && exo.isPlaying()) || lastPlaying; } catch (Throwable t) {}
+            if (playingNow) {
                 Intent r = new Intent(getApplicationContext(), PlayerService.class);
                 if (Build.VERSION.SDK_INT >= 26) getApplicationContext().startForegroundService(r);
                 else getApplicationContext().startService(r);
@@ -572,6 +658,8 @@ public class PlayerService extends Service {
         String tt = (title == null || title.isEmpty()) ? "—" : title;
         String ar = (artist == null || artist.isEmpty()) ? ctx.getPackageName() : artist;
         Bitmap art = loadArt(artUri, tt, ar, acc, letter);
+        MediaStyle ms = new MediaStyle().setShowActionsInCompactView(0, 1, 2);
+        try { if (sessionToken != null) ms.setMediaSession(sessionToken); } catch (Throwable t) {}
         NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH)
             .setContentTitle(tt)
             .setContentText(ar)
@@ -582,7 +670,7 @@ public class PlayerService extends Service {
             .setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-            .setStyle(new MediaStyle().setShowActionsInCompactView(0, 1, 2));
+            .setStyle(ms);
         if (art != null) b.setLargeIcon(art);
         b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_media_previous, "prev", pi(ctx, "prev")).build());
         b.addAction(new NotificationCompat.Action.Builder(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, "tog", pi(ctx, "toggle")).build());
@@ -594,7 +682,11 @@ public class PlayerService extends Service {
         Intent i = new Intent(ctx, PlayerService.class);
         i.putExtra(ACT, act);
         int req = 1 + act.hashCode();
-        return PendingIntent.getService(ctx, req, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        int fl = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        try {
+            if (Build.VERSION.SDK_INT >= 26) return PendingIntent.getForegroundService(ctx, req, i, fl);
+        } catch (Throwable t) {}
+        return PendingIntent.getService(ctx, req, i, fl);
     }
 
     static Bitmap loadArt(String artUri, String title, String artist, String acc, String letter) {
