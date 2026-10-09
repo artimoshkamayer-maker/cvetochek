@@ -357,6 +357,12 @@ public class PlayerService extends Service {
             try { saveQueue(); } catch (Throwable t) {}
         } catch (Throwable t) {}
     }
+    // true when ExoPlayer actually owns playback (native/cached track loaded).
+    // Web-only tracks (blob/IDB) play in the WebView — notification buttons must be
+    // forwarded to JS via fire() instead of poking an idle ExoPlayer.
+    static boolean hasMedia() {
+        try { return exo != null && exo.getCurrentMediaItem() != null; } catch (Throwable t) { return false; }
+    }
     public static void audioToggle() {
         ensurePlayer(appCtx != null ? appCtx : null);
         if (exo == null) return;
@@ -648,9 +654,9 @@ public class PlayerService extends Service {
             String act = intent.getStringExtra(ACT);
             if (act != null) {
                 switch (act) {
-                    case "toggle": audioToggle(); afterNative("state"); return START_STICKY;
-                    case "next": audioNext(); return START_STICKY;
-                    case "prev": audioPrev(); return START_STICKY;
+                    case "toggle": if (!hasMedia()) { fire("toggle", -1); return START_STICKY; } audioToggle(); afterNative("state"); return START_STICKY;
+                    case "next": if (!hasMedia()) { fire("next", -1); return START_STICKY; } audioNext(); return START_STICKY;
+                    case "prev": if (!hasMedia()) { fire("prev", -1); return START_STICKY; } audioPrev(); return START_STICKY;
                     case "fav": fire("fav", -1); return START_STICKY;
                     case "seekto": fire("seekto", -1); return START_STICKY;
                     case "stop": audioStop(this); fire("stop", -1); return START_NOT_STICKY;
@@ -724,7 +730,7 @@ public class PlayerService extends Service {
         String tt = (title == null || title.isEmpty()) ? "—" : title;
         String ar = (artist == null || artist.isEmpty()) ? ctx.getPackageName() : artist;
         Bitmap art = loadArt(artUri, tt, ar, acc, letter);
-        MediaStyle ms = new MediaStyle().setShowActionsInCompactView(0, 1, 2);
+        MediaStyle ms = new MediaStyle().setShowActionsInCompactView(1, 2, 3);
         try { if (sessionToken != null) ms.setMediaSession(sessionToken); } catch (Throwable t) {}
         NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH)
             .setContentTitle(tt)
@@ -736,6 +742,7 @@ public class PlayerService extends Service {
             .setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+            .setDeleteIntent(pi(ctx, "stop"))
             .setStyle(ms);
         if (art != null) b.setLargeIcon(art);
         b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_media_previous, "prev", pi(ctx, "prev")).build());

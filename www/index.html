@@ -392,7 +392,7 @@ bindRows();
 }
 
 const _vcache={};
-async function vidAdd(list){let n=0;for(const f of list){if(!/^video\//i.test(f.type||'')&&!/\.(mp4|m4v|webm|ogv|mov|mkv|avi|3gp|3g2|flv|wmv|mpg|mpeg|ts|m2ts|mts|asf|rm|rmvb|vob|f4v|divx)$/i.test(f.name||''))continue;const id=uid();if(!S.noSave){await dbPut(id,f);await dbPut(id+':meta',{id,name:f.name,size:f.size||0,kind:'video'})}try{_vcache[id]=URL.createObjectURL(f)}catch(e){}S.vids=S.vids||[];S.vids.push({id,name:f.name,size:f.size||0});n++}save();renderAll();toast(n?(T('added')+n+' 🎬'):T('noAudio'))}
+async function vidAdd(list){let n=0;for(const f of list){if(!/^video\//i.test(f.type||'')&&!/\.(mp4|m4v|webm|ogv|mov|mkv|avi|3gp|3g2|flv|wmv|mpg|mpeg|ts|m2ts|mts|asf|rm|rmvb|vob|f4v|divx)$/i.test(f.name||''))continue;const id=uid();await dbPut(id,f);await dbPut(id+':meta',{id,name:f.name,size:f.size||0,kind:'video'});try{_vcache[id]=URL.createObjectURL(f)}catch(e){}S.vids=S.vids||[];S.vids.push({id,name:f.name,size:f.size||0});n++}save();renderAll();toast(n?(T('added')+n+' 🎬'):T('noAudio'))}
 let _vidCur=null;function vidSeek(d){try{const v=$('vidEl');if(v&&isFinite(v.duration)&&v.duration)v.currentTime=Math.min(Math.max(0,(v.currentTime||0)+d),v.duration)}catch(e){}}
 function vidFlash(z){try{const el=$(z?'vidFf':'vidRw');if(!el)return;el.classList.add('show');clearTimeout(el._h);el._h=setTimeout(()=>el.classList.remove('show'),450)}catch(e){}}
 function vidNext(d){try{const a=S.vids||[];if(a.length<2)return;let i=a.findIndex(x=>x.id===_vidCur);if(i<0)i=0;i=(i+d+a.length)%a.length;vidPlay(a[i].id,true)}catch(e){}}
@@ -499,6 +499,7 @@ const t=cur();if(!t)return;
 const _lnu=napUri(t);if(_lnu){try{const P=capPlugin();if(P&&P.audioPlay){try{au.pause()}catch(e){}try{auNet.pause()}catch(e){}if(NAP.send(autoplay)){S.recent=[t.id,...S.recent.filter(x=>x!==t.id)].slice(0,30);S.plays[t.id]=(S.plays[t.id]||0)+1;save();syncPlayer();renderAll();return}}}catch(e){}}
 if(capPlugin()&&capPlugin().cacheOpen&&_fileById[t.id]){try{au.pause()}catch(e){}try{auNet.pause()}catch(e){}try{NAP.cachePlay(t.id,autoplay)}catch(e){}S.recent=[t.id,...S.recent.filter(x=>x!==t.id)].slice(0,30);S.plays[t.id]=(S.plays[t.id]||0)+1;save();syncPlayer();renderAll();return}
 try{NAP.stop()}catch(e){}
+try{const _P=capPlugin();if(_P&&_P.audioPause){const _pr=_P.audioPause();if(_pr&&_pr.catch)_pr.catch(()=>{})}}catch(e){}
 const _a=AU();const _o=_a===au?auNet:au;try{_o.pause()}catch(e){}
 _a.src=t.url;_a.playbackRate=1;
 if(autoplay)_a.play().catch(()=>{});
@@ -588,7 +589,7 @@ $('eqTopBtn').onclick=()=>{renderEQ();openSheet('eqSheet')};
 if($('setX'))$('setX').onclick=()=>closeSheet('setSheet');
 if($('vidX'))$('vidX').onclick=()=>closeSheet('vidSheet');
 $('vidInput').onchange=e=>{vidAdd([...e.target.files]);e.target.value=''};
-$('vidEl').onended=()=>{try{vidNext(1)}catch(e){}};$('vidPlay').onclick=()=>{const v=$('vidEl');if(v.paused)v.play().catch(()=>{});else v.pause()};
+$('vidEl').onended=()=>{const v=$('vidEl');if(v&&v.loop){try{v.currentTime=0;v.play().catch(()=>{})}catch(e){}}};$('vidPlay').onclick=()=>{const v=$('vidEl');if(v.paused)v.play().catch(()=>{});else v.pause()};
 $('vidEl').onplay=()=>{$('vidPlay').textContent='❚❚'};
 $('vidEl').onpause=()=>{$('vidPlay').textContent='▶'};
 $('vidEl').onloadedmetadata=()=>{$('vidDur').textContent=fmt($('vidEl').duration||0);paintRange($('vidSeek'))};
