@@ -46,10 +46,10 @@ jobs:
           npm i -D @capacitor/assets
           npx capacitor-assets generate --android
 
-      - name: Set version 2.8
+      - name: Set version 2.9
         run: |
-          sed -i -E 's/versionCode [0-9]+/versionCode 28/' android/app/build.gradle
-          sed -i -E 's/versionName "[^"]+"/versionName "2.8"/' android/app/build.gradle
+          sed -i -E 's/versionCode [0-9]+/versionCode 29/' android/app/build.gradle
+          sed -i -E 's/versionName "[^"]+"/versionName "2.9"/' android/app/build.gradle
           grep -E 'version(Code|Name)' android/app/build.gradle
 
       - name: Inject native music scanner
@@ -185,5 +185,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: cvetochek-2.8
+          name: cvetochek-2.9
           path: android/app/build/outputs/apk/debug/app-debug.apk

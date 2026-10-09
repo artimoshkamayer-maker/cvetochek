@@ -1,6 +1,6 @@
 {
   "name": "cvetochek",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "private": true,
   "dependencies": {
     "@capacitor/core": "^8.0.0",

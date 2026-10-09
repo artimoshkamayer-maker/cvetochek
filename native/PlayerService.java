@@ -581,12 +581,12 @@ public class PlayerService extends Service {
         session = new MediaSessionCompat(this, "cvetochek");
         session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         session.setCallback(new MediaSessionCompat.Callback() {
-            @Override public void onPlay() { audioResume(); afterNative("state"); }
-            @Override public void onPause() { audioPause(); afterNative("state"); }
-            @Override public void onSkipToNext() { audioNext(); }
-            @Override public void onSkipToPrevious() { audioPrev(); }
+            @Override public void onPlay() { if (!hasMedia()) { fire("toggle", -1); return; } audioResume(); afterNative("state"); }
+            @Override public void onPause() { if (!hasMedia()) { fire("toggle", -1); return; } audioPause(); afterNative("state"); }
+            @Override public void onSkipToNext() { if (!hasMedia()) { fire("next", -1); return; } audioNext(); }
+            @Override public void onSkipToPrevious() { if (!hasMedia()) { fire("prev", -1); return; } audioPrev(); }
             @Override public void onStop() { audioStop(PlayerService.this); fire("stop", -1); }
-            @Override public void onSeekTo(long pos) { audioSeek((int)(pos / 1000)); }
+            @Override public void onSeekTo(long pos) { if (!hasMedia()) { fire("seekto", pos); return; } audioSeek((int)(pos / 1000)); }
         });
         session.setActive(true);
         try { sessionToken = session.getSessionToken(); } catch (Throwable t) {}
