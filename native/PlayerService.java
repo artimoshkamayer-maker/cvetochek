@@ -77,6 +77,9 @@ public class PlayerService extends Service {
     static String lastLetter = "?";
     static volatile long lastJsCall = 0;
     static volatile boolean lastPlaying = false;
+    static volatile long lastAudioPlayMs = 0;
+    static String lastShowSig = "";
+    static volatile long lastShowMs = 0;
     static MediaSessionCompat.Token sessionToken = null;
     static MediaSessionCompat sessRef = null;
     static boolean eqOn = false;
@@ -103,9 +106,11 @@ public class PlayerService extends Service {
         if (u == null || u.isEmpty()) return false;
         if (u.startsWith("content://")) return true;
         if (u.startsWith("blob:") || u.startsWith("data:")) return false;
-        if (u.startsWith("http://localhost") || u.startsWith("https://localhost")) return false;
+        String l = u.toLowerCase();
+        if (l.startsWith("http://localhost") || l.startsWith("https://localhost")) return false;
         if (u.contains("127.0.0.1")) return false;
-        return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("file:///");
+        if (l.startsWith("file:")) return true;
+        return l.startsWith("http://") || l.startsWith("https://");
     }
 
     static synchronized void ensurePlayer(Context c) {
@@ -151,6 +156,7 @@ public class PlayerService extends Service {
                         if (recent) {
                             exo.seekToDefaultPosition();
                             exo.setPlayWhenReady(false);
+                            try { refreshNotification(); } catch (Throwable t) {}
                             ActionSink s = sink;
                             if (s != null) s.onEvent("ended", -1);
                         } else {
@@ -300,6 +306,7 @@ public class PlayerService extends Service {
     static synchronized void resumeRestored() {
         try {
             if (exo == null || queue.isEmpty() || !lastPlaying || exo.isPlaying()) return;
+            try { if (SystemClock.elapsedRealtime() - lastAudioPlayMs < 3000) return; } catch (Throwable t) {}
             int idx = Math.max(0, Math.min(qIndex, queue.size() - 1));
             Track t = queue.get(idx);
             if (!playable(t.uri)) { stepQueue(1, true); return; }
@@ -345,7 +352,8 @@ public class PlayerService extends Service {
             Track qt = queue.get(qIndex);
             if (qt.uri.equals(uri)) cur = qt;
         }
-        if (!playable(uri)) { try { applyEq(); } catch (Throwable t) {} return; }
+        try { lastAudioPlayMs = SystemClock.elapsedRealtime(); } catch (Throwable t) {}
+        if (!playable(uri)) { try { applyEq(); } catch (Throwable t) {} try { saveQueue(); } catch (Throwable t) {} try { refreshNotification(); } catch (Throwable t) {} return; }
         try { lastPlaying = autoplay; } catch (Throwable t) {}
         try {
             exo.setMediaItem(MediaItem.fromUri(uri));
@@ -523,6 +531,12 @@ public class PlayerService extends Service {
             PendingIntent ci = PendingIntent.getActivity(ctx, 100, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             Notification n = buildFull(ctx, ci, title, artist, playing, posMs, durMs, lastAcc, lastFav ? 1 : 0, lastLetter, artUri);
             try { nm.notify(NID, n); } catch (Throwable t) {}
+            try {
+                String _sig = (title == null ? "" : title) + "|" + (artist == null ? "" : artist) + "|" + (playing ? 1 : 0) + "|" + (lastFav ? 1 : 0) + "|" + lastAcc;
+                long _now = SystemClock.elapsedRealtime();
+                if (_sig.equals(lastShowSig) && _now - lastShowMs < 15000) return;
+                lastShowSig = _sig; lastShowMs = _now;
+            } catch (Throwable t) {}
             try {
                 Intent fs = new Intent(ctx, PlayerService.class);
                 fs.putExtra("n_title", title); fs.putExtra("n_artist", artist);
