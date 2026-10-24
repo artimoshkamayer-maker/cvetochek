@@ -1,0 +1,7 @@
+$meta
+  title = Цветочек
+  description = Музыкальный плеер в стиле Audify: песни, артисты, альбомы, жанры, папки, плейлисты, очередь, усиление баса без хрипа, громкость до 100%, обрезка рингтонов, темы, таймер сна.
+  tags = music, player, equalizer, mp3, audio
+  image = https://user.uploads.dev/file/2fbe09d343165732b93c2f808c6d907f.jpg
+
+kv = {import:kv-plugin}
