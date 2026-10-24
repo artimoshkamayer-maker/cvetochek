@@ -328,6 +328,8 @@ public class PlayerService extends Service {
             o.put("pos", pd[0] / 1000.0);
             o.put("dur", pd[1] / 1000.0);
             o.put("uri", cur == null || cur.uri == null ? "" : cur.uri);
+            o.put("title", cur == null || cur.title == null ? "" : cur.title);
+            o.put("artist", cur == null || cur.artist == null ? "" : cur.artist);
             o.put("index", qIndex);
             o.put("count", queue.size());
             o.put("repeat", repMode);
@@ -505,14 +507,18 @@ public class PlayerService extends Service {
         if (acc != null && !acc.isEmpty()) lastAcc = acc;
         lastFav = fav == 1;
         lastLetter = (letter == null || letter.isEmpty()) ? "?" : letter;
-        if (title != null && !title.isEmpty()) {
+        try {
+            boolean _hasM = false;
+            try { _hasM = exo != null && exo.getCurrentMediaItem() != null; } catch (Throwable t) {}
+            if (!_hasM && title != null && !title.isEmpty()) {
             if (!title.equals(cur.title) || (artist != null && !artist.equals(cur.artist))) {
                 cur = new Track(cur.uri, title, artist == null ? "" : artist);
             }
             if (lastLetter.equals("?")) {
                 try { lastLetter = title.trim().substring(0, 1).toUpperCase(); } catch (Throwable t) { lastLetter = "?"; }
             }
-        }
+            }
+        } catch (Throwable t) {}
         try { ensurePlayer(ctx); } catch (Throwable t) {}
         try {
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -632,6 +638,7 @@ public class PlayerService extends Service {
             float sp = playing ? 1f : 0f;
             PlaybackStateCompat.Builder pb = new PlaybackStateCompat.Builder()
                 .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE
+                    | PlaybackStateCompat.ACTION_PLAY_PAUSE
                     | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
                     | PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_STOP)
                 .setState(st, Math.max(0, pd[0]), sp);
@@ -650,6 +657,7 @@ public class PlayerService extends Service {
             float sp = playing ? 1f : 0f;
             PlaybackStateCompat.Builder pb = new PlaybackStateCompat.Builder()
                 .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE
+                    | PlaybackStateCompat.ACTION_PLAY_PAUSE
                     | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
                     | PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_STOP)
                 .setState(st, Math.max(0, posMs), sp);
@@ -662,6 +670,10 @@ public class PlayerService extends Service {
         try { ensurePlayer(this); } catch (Throwable t) {}
         try { if (queue.isEmpty()) restoreQueue(); } catch (Throwable t) {}
         try { if (intent == null || intent.getStringExtra(ACT) == null) resumeRestored(); } catch (Throwable t) {}
+        try {
+            boolean _bare = (intent == null) || (intent.getStringExtra(ACT) == null && !intent.hasExtra("n_title"));
+            if (_bare && queue.isEmpty() && !hasMedia()) return START_STICKY;
+        } catch (Throwable t) {}
         String title = null, artist = null, acc = null, letter = null, art = null;
         boolean playing = true; long pos = 0, dur = 0; int fav = 0;
         if (intent != null) {
@@ -689,6 +701,11 @@ public class PlayerService extends Service {
                 playing = pd[2] == 1;
                 pos = pd[0]; dur = pd[1];
             }
+            try {
+                boolean _hm = false;
+                try { _hm = exo != null && exo.getCurrentMediaItem() != null; } catch (Throwable t) {}
+                if (_hm) { title = cur.title; artist = cur.artist; }
+            } catch (Throwable t) {}
             if (title == null) title = cur.title;
             if (artist == null) artist = cur.artist;
             if (acc == null) acc = lastAcc;
@@ -758,6 +775,8 @@ public class PlayerService extends Service {
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setDeleteIntent(pi(ctx, "stop"))
             .setStyle(ms);
+        // Audify-style: show immediately on Android 12+ (no deferred display from startForeground)
+        if (Build.VERSION.SDK_INT >= 31) { try { b.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE); } catch (Throwable t) {} }
         if (art != null) b.setLargeIcon(art);
         b.addAction(new NotificationCompat.Action.Builder(android.R.drawable.ic_media_previous, "prev", pi(ctx, "prev")).build());
         b.addAction(new NotificationCompat.Action.Builder(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play, "tog", pi(ctx, "toggle")).build());

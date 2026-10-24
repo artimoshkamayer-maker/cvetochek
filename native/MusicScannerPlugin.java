@@ -222,6 +222,8 @@ public class MusicScannerPlugin extends Plugin {
             r.put("pos", o.optDouble("pos", 0));
             r.put("dur", o.optDouble("dur", 0));
             r.put("uri", o.optString("uri", ""));
+            r.put("title", o.optString("title", ""));
+            r.put("artist", o.optString("artist", ""));
             r.put("index", o.optInt("index", -1));
             r.put("count", o.optInt("count", 0));
             r.put("repeat", o.optInt("repeat", 0));
