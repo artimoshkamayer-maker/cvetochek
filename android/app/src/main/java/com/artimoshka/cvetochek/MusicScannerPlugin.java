@@ -133,6 +133,20 @@ public class MusicScannerPlugin extends Plugin {
         } catch (Exception ignored) {}
     }
 
+    static Bitmap appIcon(Context ctx) {
+        try {
+            if (ctx == null) return null;
+            int id = ctx.getResources().getIdentifier("ic_launcher", "mipmap", ctx.getPackageName());
+            if (id == 0) return null;
+            Bitmap b = android.graphics.BitmapFactory.decodeResource(ctx.getResources(), id);
+            if (b == null) return null;
+            try { return Bitmap.createScaledBitmap(b, 256, 256, true); }
+            catch (Exception e) { return b; }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     static Bitmap makeArt(String acc, String letter) {
         try {
             int col;

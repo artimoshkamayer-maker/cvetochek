@@ -318,6 +318,7 @@ public class PlayerService extends Service {
         void prev() {
             try {
                 if (player.hasPreviousMediaItem()) player.seekToPreviousMediaItem();
+                else if (player.getMediaItemCount() > 0) player.seekTo(player.getMediaItemCount() - 1, 0);
             } catch (Exception ignored) {}
         }
 
@@ -571,7 +572,9 @@ public class PlayerService extends Service {
             boolean playing = isPlaying();
             double pos = posSec();
             double dur = durSec();
-            Bitmap art = MusicScannerPlugin.makeArt(acc,
+            Bitmap art = null;
+            try { art = MusicScannerPlugin.appIcon(svc); } catch (Exception ignored) {}
+            if (art == null) art = MusicScannerPlugin.makeArt(acc,
                     lastLetter != null ? lastLetter : (lastTitle.isEmpty() ? "\u266A" : lastTitle.substring(0, 1)));
             NotificationCompat.Builder b = new NotificationCompat.Builder(svc, CH)
                     .setSmallIcon(R.mipmap.ic_launcher)
