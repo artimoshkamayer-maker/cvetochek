@@ -10,8 +10,8 @@ android {
         applicationId 'com.artimoshka.cvetochek'
         minSdk 26
         targetSdk 35
-        versionCode 30
-        versionName '2.12'
+        versionCode 32
+        versionName '2.14'
     }
 
     buildTypes {
@@ -33,5 +33,5 @@ dependencies {
     implementation project(':capacitor-android')
     implementation 'androidx.media3:media3-exoplayer:1.7.1'
     implementation 'androidx.media:media:1.7.0'
- implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
 }
