@@ -1,0 +1,15 @@
+{
+  "name": "cvetochek-apk",
+  "version": "2.9.0",
+  "private": true,
+  "scripts": {
+    "sync": "node tools/sync-www.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

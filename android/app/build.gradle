@@ -1,0 +1,36 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.artimoshka.cvetochek'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.artimoshka.cvetochek'
+        minSdk 26
+        targetSdk 35
+        versionCode 29
+        versionName '2.9'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+            applicationIdSuffix '.debug'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+    implementation 'androidx.media3:media3-exoplayer:1.7.1'
+    implementation 'androidx.media:media:1.7.0'
+}

@@ -1,0 +1,9 @@
+{
+  "appId": "com.artimoshka.cvetochek",
+  "appName": "Цветочек",
+  "webDir": "www",
+  "backgroundColor": "#121016",
+  "android": {
+    "allowMixedContent": true
+  }
+}
