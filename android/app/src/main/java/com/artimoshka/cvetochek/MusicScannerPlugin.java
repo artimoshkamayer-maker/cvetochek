@@ -276,6 +276,11 @@ public class MusicScannerPlugin extends Plugin {
             } catch (Exception ignored) {}
             uiAlive = true;
             ensureService();
+            if (PlayerService.core == null) {
+                String why = PlayerService.coreErr != null ? (" (" + PlayerService.coreErr + ")") : "";
+                call.reject("FGS no start" + why);
+                return;
+            }
             if (PlayerService.core != null) {
                 PlayerService.core.setQueue(uris, titles, artists, index, repeat, autoplay,
                         title, artist, acc);
@@ -346,6 +351,9 @@ public class MusicScannerPlugin extends Plugin {
     public void audioState(PluginCall call) {
         try {
             JSObject r = new JSObject();
+            r.put("hasCore", PlayerService.core != null);
+            r.put("hasPlayer", PlayerService.core != null && PlayerService.core.player != null);
+            if (PlayerService.coreErr != null) r.put("coreErr", PlayerService.coreErr);
             if (PlayerService.core != null && !PlayerService.core.uris.isEmpty()) {
                 r.put("uri", PlayerService.core.currentUri());
                 JSArray q = new JSArray();
@@ -382,6 +390,31 @@ public class MusicScannerPlugin extends Plugin {
             } catch (Exception ignored) {}
             ensureService();
             if (PlayerService.core != null) PlayerService.core.applyEQ();
+            call.resolve(new JSObject());
+        } catch (Exception e) {
+            call.reject(e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void playerFx(PluginCall call) {
+        try {
+            uiAlive = true;
+            double rate = 1, pitch = 0;
+            try {
+                Object r = call.getData() != null ? call.getData().opt("rate") : null;
+                if (r instanceof Number) rate = ((Number) r).doubleValue();
+                Object p = call.getData() != null ? call.getData().opt("pitch") : null;
+                if (p instanceof Number) pitch = ((Number) p).doubleValue();
+            } catch (Exception ignored) {}
+            try {
+                getContext().getSharedPreferences("cvfx", Context.MODE_PRIVATE).edit()
+                        .putFloat("rate", (float) Math.max(0.5, Math.min(1.5, rate)))
+                        .putFloat("pitch", (float) Math.max(-6, Math.min(6, pitch)))
+                        .apply();
+            } catch (Exception ignored) {}
+            ensureService();
+            if (PlayerService.core != null) PlayerService.core.applyFx();
             call.resolve(new JSObject());
         } catch (Exception e) {
             call.reject(e.getMessage());

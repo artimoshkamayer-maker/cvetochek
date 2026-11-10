@@ -27,6 +27,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 
@@ -42,6 +43,7 @@ import java.util.List;
 public class PlayerService extends Service {
 
     static PlayerCore core = null;
+    static String coreErr = null;
 
     private static final String CH = "cvet.playback";
     private static final int NOTIF_ID = 7;
@@ -58,8 +60,21 @@ public class PlayerService extends Service {
                 nm.createNotificationChannel(ch);
             }
         } catch (Exception ignored) {}
-        if (core == null) core = new PlayerCore(this);
-        core.restore();
+        if (core == null) {
+            try {
+                core = new PlayerCore(this);
+            } catch (Throwable t) {
+                coreErr = "ctor:" + t;
+                core = null;
+            }
+        }
+        if (core != null) {
+            try {
+                core.restore();
+            } catch (Throwable t) {
+                coreErr = "restore:" + t;
+            }
+        }
     }
 
     @Override
@@ -214,7 +229,9 @@ public class PlayerService extends Service {
                         } catch (Exception ignored) {}
                     }
                 });
-            } catch (Exception ignored) {}
+            } catch (Throwable t) {
+                PlayerService.coreErr = "exo:" + t;
+            }
             try {
                 session = new MediaSessionCompat(svc, "cvetochek");
                 session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
@@ -247,6 +264,7 @@ public class PlayerService extends Service {
                       int index, int rep, boolean autoplay,
                       String title, String artist, String accCol) {
             try {
+                try { ensureForeground(); } catch (Exception ignored) {}
                 uris.clear(); titles.clear(); artists.clear();
                 if (u != null) {
                     for (int i = 0; i < u.size(); i++) {
@@ -279,6 +297,7 @@ public class PlayerService extends Service {
                 ensureForeground();
                 updateNotif();
                 applyEQ();
+                applyFx();
                 persist();
             } catch (Exception ignored) {}
         }
@@ -416,6 +435,29 @@ public class PlayerService extends Service {
             } catch (Exception ignored) {}
         }
 
+        // ----- скорость и тон (slowed / nightcore) -----
+
+        void applyFx() {
+            if (player == null) return;
+            float rate = 1, pitch = 0;
+            try {
+                SharedPreferences p = svc.getSharedPreferences("cvfx", Context.MODE_PRIVATE);
+                rate = p.getFloat("rate", 1);
+                pitch = p.getFloat("pitch", 0);
+            } catch (Exception ignored) {}
+            rate = Math.max(0.5f, Math.min(1.5f, rate));
+            pitch = Math.max(-6f, Math.min(6f, pitch));
+            try {
+                if (!svc.getSharedPreferences("cveq", Context.MODE_PRIVATE).getBoolean("on", false)) {
+                    rate = 1; pitch = 0;
+                }
+            } catch (Exception ignored) {}
+            try {
+                player.setPlaybackParameters(
+                        new PlaybackParameters(rate, (float) Math.pow(2.0, pitch / 12.0)));
+            } catch (Exception ignored) {}
+        }
+
         // ----- EQ -----
 
         void applyEQ() {
@@ -503,6 +545,7 @@ public class PlayerService extends Service {
                     artists.add("");
                 }
                 repeat = rep;
+                try { ensureForeground(); } catch (Exception ignored) {}
                 List<MediaItem> items = new ArrayList<>();
                 for (String uu : uris) items.add(new MediaItem.Builder().setUri(uu).build());
                 player.setRepeatMode(repMode(repeat));
@@ -513,6 +556,7 @@ public class PlayerService extends Service {
                 ensureForeground();
                 updateNotif();
                 applyEQ();
+                applyFx();
             } catch (Exception ignored) {}
         }
 
