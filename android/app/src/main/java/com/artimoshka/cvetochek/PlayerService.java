@@ -184,7 +184,7 @@ public class PlayerService extends Service {
                     if (player.getPlayWhenReady()
                             && player.getPlaybackState() == Player.STATE_IDLE
                             && player.getMediaItemCount() > 0) {
-                        try { player.prepare(); } catch (Exception ignored) {}
+                        try { player.prepare(); } catch (Exception ignored2) {}
                     }
                 } catch (Exception ignored) {}
             }
@@ -245,7 +245,7 @@ public class PlayerService extends Service {
                             try { code = error.getErrorCodeName(); }
                             catch (Exception ignored) {
                                 try { code = "code_" + error.errorCode; }
-                                catch (Exception ignored) {}
+                                catch (Exception ignored2) {}
                             }
                             String msg = "?";
                             try { msg = String.valueOf(error.getMessage()); }
@@ -338,9 +338,9 @@ public class PlayerService extends Service {
                 player.setMediaItems(items, idx, C.TIME_UNSET);
                 player.setPlayWhenReady(autoplay);
                 player.prepare();
-                if (autoplay) { try { player.play(); } catch (Exception ignored) {} }
-                try { h.removeCallbacks(watchRun); } catch (Exception ignored) {}
-                try { h.postDelayed(watchRun, 2500); } catch (Exception ignored) {}
+                if (autoplay) { try { player.play(); } catch (Exception ignored2) {} }
+                try { h.removeCallbacks(watchRun); } catch (Exception ignored2) {}
+                try { h.postDelayed(watchRun, 2500); } catch (Exception ignored2) {}
                 syncMetaFromQueue();
                 ensureForeground();
                 updateNotif();
@@ -380,7 +380,7 @@ public class PlayerService extends Service {
         void resume() {
             try {
                 if (player.getPlaybackState() == Player.STATE_IDLE && player.getMediaItemCount() > 0) {
-                    try { player.prepare(); } catch (Exception ignored) {}
+                    try { player.prepare(); } catch (Exception ignored2) {}
                 }
                 player.setPlayWhenReady(true);
             } catch (Exception ignored) {}
