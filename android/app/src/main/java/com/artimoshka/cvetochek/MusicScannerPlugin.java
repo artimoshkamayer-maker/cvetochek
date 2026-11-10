@@ -354,6 +354,10 @@ public class MusicScannerPlugin extends Plugin {
             r.put("hasCore", PlayerService.core != null);
             r.put("hasPlayer", PlayerService.core != null && PlayerService.core.player != null);
             if (PlayerService.coreErr != null) r.put("coreErr", PlayerService.coreErr);
+            try {
+                if (PlayerService.core != null && PlayerService.core.lastError != null)
+                    r.put("err", PlayerService.core.lastError);
+            } catch (Exception ignored) {}
             if (PlayerService.core != null && !PlayerService.core.uris.isEmpty()) {
                 r.put("uri", PlayerService.core.currentUri());
                 JSArray q = new JSArray();
@@ -364,6 +368,13 @@ public class MusicScannerPlugin extends Plugin {
                 r.put("playing", PlayerService.core.isPlaying());
                 r.put("pos", PlayerService.core.posSec());
                 r.put("dur", PlayerService.core.durSec());
+                try {
+                    int st = PlayerService.core.player.getPlaybackState();
+                    r.put("state", st == 1 ? "IDLE" : st == 2 ? "BUFFERING" : st == 3 ? "READY" : st == 4 ? "ENDED" : "?" + st);
+                } catch (Exception ignored) {}
+                try { r.put("pwr", PlayerService.core.player.getPlayWhenReady()); } catch (Exception ignored) {}
+                try { r.put("n", PlayerService.core.player.getMediaItemCount()); } catch (Exception ignored) {}
+                try { r.put("streak", PlayerService.core.errStreak); } catch (Exception ignored) {}
             }
             call.resolve(r);
         } catch (Exception e) {

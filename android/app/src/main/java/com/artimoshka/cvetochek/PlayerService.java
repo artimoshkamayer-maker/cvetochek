@@ -165,6 +165,9 @@ public class PlayerService extends Service {
         String lastArtist = "";
         String lastLetter = "\u266A";
         boolean fg = false;
+        String lastError = null;
+        int errIndex = -1;
+        int errStreak = 0;
         MediaSessionCompat session;
         Equalizer eq = null;
         int eqSession = 0;
@@ -173,6 +176,17 @@ public class PlayerService extends Service {
             @Override public void run() {
                 try { persist(); } catch (Exception ignored) {}
                 try { h.postDelayed(this, 5000); } catch (Exception ignored) {}
+            }
+        };
+        final Runnable watchRun = new Runnable() {
+            @Override public void run() {
+                try {
+                    if (player.getPlayWhenReady()
+                            && player.getPlaybackState() == Player.STATE_IDLE
+                            && player.getMediaItemCount() > 0) {
+                        try { player.prepare(); } catch (Exception ignored) {}
+                    }
+                } catch (Exception ignored) {}
             }
         };
 
@@ -209,7 +223,13 @@ public class PlayerService extends Service {
                     @Override
                     public void onPlaybackStateChanged(int st) {
                         try {
-                            if (st == Player.STATE_READY) applyEQ();
+                            if (st == Player.STATE_READY) {
+                                errStreak = 0;
+                                errIndex = -1;
+                                lastError = null;
+                                applyEQ();
+                                applyFx();
+                            }
                             if (st == Player.STATE_ENDED) {
                                 updateNotif();
                                 persist();
@@ -221,10 +241,35 @@ public class PlayerService extends Service {
                     @Override
                     public void onPlayerError(PlaybackException error) {
                         try {
-                            if (player.hasNextMediaItem()) player.seekToNextMediaItem();
-                            else {
+                            String code = "?";
+                            try { code = error.getErrorCodeName(); }
+                            catch (Exception ignored) {
+                                try { code = "code_" + error.errorCode; }
+                                catch (Exception ignored) {}
+                            }
+                            String msg = "?";
+                            try { msg = String.valueOf(error.getMessage()); }
+                            catch (Exception ignored) {}
+                            String cause = "";
+                            try { cause = String.valueOf(error.getCause()); }
+                            catch (Exception ignored) {}
+                            lastError = code + " :: " + msg + " :: " + cause;
+                            try {
+                                MusicScannerPlugin.sendEvent("playerror", error.errorCode);
+                            } catch (Exception ignored) {}
+                        } catch (Exception ignored) {}
+                        try {
+                            int idx = -1;
+                            try { idx = player.getCurrentMediaItemIndex(); }
+                            catch (Exception ignored) {}
+                            if (idx == errIndex) errStreak++;
+                            else { errIndex = idx; errStreak = 1; }
+                            if (errStreak >= 2 || !player.hasNextMediaItem()) {
                                 try { player.stop(); } catch (Exception ignored) {}
                                 updateNotif();
+                            } else {
+                                try { player.seekToNextMediaItem(); }
+                                catch (Exception ignored) {}
                             }
                         } catch (Exception ignored) {}
                     }
@@ -293,6 +338,9 @@ public class PlayerService extends Service {
                 player.setMediaItems(items, idx, C.TIME_UNSET);
                 player.setPlayWhenReady(autoplay);
                 player.prepare();
+                if (autoplay) { try { player.play(); } catch (Exception ignored) {} }
+                try { h.removeCallbacks(watchRun); } catch (Exception ignored) {}
+                try { h.postDelayed(watchRun, 2500); } catch (Exception ignored) {}
                 syncMetaFromQueue();
                 ensureForeground();
                 updateNotif();
@@ -317,6 +365,9 @@ public class PlayerService extends Service {
 
         boolean toggle() {
             try {
+                if (player.getPlaybackState() == Player.STATE_IDLE && player.getMediaItemCount() > 0) {
+                    try { player.prepare(); } catch (Exception ignored) {}
+                }
                 boolean p = player.isPlaying();
                 player.setPlayWhenReady(!p);
                 return !p;
@@ -326,7 +377,14 @@ public class PlayerService extends Service {
         }
 
         void pause() { try { player.setPlayWhenReady(false); } catch (Exception ignored) {} }
-        void resume() { try { player.setPlayWhenReady(true); } catch (Exception ignored) {} }
+        void resume() {
+            try {
+                if (player.getPlaybackState() == Player.STATE_IDLE && player.getMediaItemCount() > 0) {
+                    try { player.prepare(); } catch (Exception ignored) {}
+                }
+                player.setPlayWhenReady(true);
+            } catch (Exception ignored) {}
+        }
 
         void next() {
             try {
