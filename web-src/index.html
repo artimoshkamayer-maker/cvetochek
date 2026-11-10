@@ -11,6 +11,7 @@ header.top{position:static;z-index:30;background:transparent;padding:calc(14px +
 .logoRow .sub{font-size:11px;color:var(--mut);margin-top:-3px}
 .icobtn{width:40px;height:40px;border-radius:50%;border:0;background:var(--card);color:var(--txt);font-size:18px;cursor:pointer;display:grid;place-items:center}
 .icobtn:active{transform:scale(.93)}
+.icobtn.eqblue{background:linear-gradient(135deg,#06263f,#0b84ff);border:1px solid rgba(0,201,255,.55);box-shadow:0 0 14px rgba(0,201,255,.55),inset 0 0 8px rgba(0,201,255,.35)}
 .search{margin:10px 0 4px;display:flex;gap:8px}
 .search input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--txt);outline:none;font-size:14px}
 .search input:focus{border-color:var(--acc)}
@@ -64,7 +65,7 @@ input[type=range].seek{width:100%;accent-color:var(--acc)}
 .trow{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
 .ctrl{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
 .cbtn{border:0;background:var(--card);color:var(--txt);cursor:pointer;border-radius:50%;width:52px;height:52px;font-size:22px;display:grid;place-items:center}
-.cbtn.big{width:72px;height:72px;font-size:30px;background:var(--acc);color:#000;box-shadow:0 10px 26px rgba(11,132,255,.45)}
+.cbtn.big{width:72px;height:72px;font-size:30px;background:var(--acc);color:#000;box-shadow:0 10px 26px rgba(11,132,255,.45);line-height:1}#playBtn .tri{display:inline-block;transform:translate(.05em,.03em)}#playBtn .ppause,#miniPlay .ppause{display:inline-flex;gap:.12em;align-items:center;line-height:1}#playBtn .ppause{font-size:26px}#miniPlay .ppause{font-size:14px}
 .cbtn.sm{width:44px;height:44px;font-size:17px;background:none;color:var(--mut)}
 .cbtn.sm.on{color:var(--acc)}
 .abtn{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:10px;font-size:13px;cursor:pointer}
@@ -160,10 +161,9 @@ dialog input{background:var(--card);border:1px solid var(--line);color:var(--txt
 <header class="top">
 <div class="logoRow">
 <div class="logo"><img src="src/img/logo.jpg" alt=""></div>
-<div style="flex:1"><b>Цветочек 🌸 <span style="color:#c228a0">mp3</span> - <span style="color:#00c9ff">mp4</span></b></div>
-<button class="icobtn" id="eqTopBtn" title="Усиление баса"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+<div class="search" style="flex:1;margin:0"><input id="qInput" data-i18n-ph="searchPh" placeholder="Поиск: песня, артист, альбом…"></div>
+<button class="icobtn eqblue" id="eqTopBtn" title="Усиление баса"><svg viewBox="0 0 24 24" width="20" height="20"><defs><linearGradient id="eqg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c44dff"/><stop offset=".55" stop-color="#00c9ff"/><stop offset="1" stop-color="#7dffcb"/></linearGradient></defs><g fill="url(#eqg)"><rect x="3.5" y="13" width="3.2" height="7" rx="1.2"/><rect x="8" y="8" width="3.2" height="12" rx="1.2"/><rect x="12.5" y="11" width="3.2" height="9" rx="1.2"/><rect x="17" y="4" width="3.2" height="16" rx="1.2"/></g></svg></button>
 </div>
-<div class="search"><input id="qInput" data-i18n-ph="searchPh" placeholder="Поиск: песня, артист, альбом…"></div>
 <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg,.aac,.opus,.weba" multiple hidden>
 <input type="file" id="dirInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0">
 </header>
@@ -226,6 +226,7 @@ dialog input{background:var(--card);border:1px solid var(--line);color:var(--txt
 <div class="kv" hidden><label><span data-i18n="accent">🎨 Акцент</span> <small data-i18n="accentSub">свой цвет темы</small></label><div style="display:flex;gap:8px" id="accEl"></div></div>
 <input type="file" id="bgInput" accept="image/*" hidden>
 <div class="kv"><label><span data-i18n="lang">🌐 Язык</span> <small>RU / EN</small></label><div style="display:flex;gap:6px"><button class="abtn" data-lang="ru">RU</button><button class="abtn" data-lang="en">EN</button></div></div>
+<div class="kv"><label><span>\uD83D\uDD27 Диагностика</span> <small>нет звука? нажми «Показать» и пришли скрин</small></label><div style="display:flex;gap:6px"><button class="abtn" id="diagBtn">Показать</button><button class="abtn" id="rescanBtn">\uD83D\uDD04 Обновить музыку</button></div><div id="diagBox" style="font-size:11px;white-space:pre-wrap;word-break:break-word;color:var(--mut);margin-top:6px" hidden></div></div>
 <div style="text-align:center;color:var(--mut);font-size:12px;margin-top:16px">Это приложение разработал один человек<br>(Artimoshka Mayer)<div style="height:10px"></div>Помочь в доработке приложения<br>писать в ТГ <a href="https://t.me/ArtimoshkaMayer" target="_blank" style="color:var(--acc)">@ArtimoshkaMayer</a></div>
 </div></div>
 
@@ -450,10 +451,11 @@ $('pickDlg').showModal();
 $('pickList').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const n=b.dataset.p;S.pl[n]=S.pl[n]||[];if(!S.pl[n].includes(id))S.pl[n].push(id);save();$('pickDlg').close();toast(T('addedTo')+n+'»')})}
 
 function napUri(t){try{if(!t)return null;return t.capUri||t.nativeUri||null}catch(e){return null}}
-const NAP={ids:[],st:{playing:false,pos:0,dur:0},pollT:0,_upTk:0,
-send(autoplay){NAP.stop();try{const P=capPlugin();const t=cur();const _nu=napUri(t);if(!P||!t||!_nu)return false;const q=[];let idx=0,ni=0;(S.queue||[]).forEach((id,i)=>{const m=S.lib.find(x=>x.id===id);if(m&&napUri(m)){q.push({uri:napUri(m),title:m.title||'',artist:m.artist||''});if(i===S.qi)idx=ni;ni++}});if(!q.length)return false;NAP.ids=(S.queue||[]).filter(id=>{const m=S.lib.find(x=>x.id===id);return m&&napUri(m)});try{const pr=P.audioPlay({uri:_nu,title:t.title||'',artist:t.artist||'',acc:S.acc||'#0b84ff',autoplay:!!autoplay,queue:q,index:idx,repeat:S.rep||0});if(pr&&pr.catch)pr.catch(e=>{try{toast('🔇 '+(e&&(e.message||e)||'?'))}catch(_){}})}catch(e){return false}try{if(P.nativeEQ){const ee=S.eq||{on:false,bands:[],bass:0};const nq=P.nativeEQ({on:!!ee.on,bands:(ee.bands||[]).map(v=>+v||0),bass:Math.min(12,+(ee.bass||0))});if(nq&&nq.catch)nq.catch(()=>{})}}catch(e){}NAP.st.playing=!!autoplay;NAP.kick();return true}catch(e){return false}},
+function setPlayIcon(el,pl){try{if(!el)return;if(pl)el.innerHTML='<span class="ppause"><b style="color:#c44dff">\u275A</b><b style="color:#8ef1ff">\u275A</b></span>';else el.innerHTML='<span class="tri">\u25B6</span>'}catch(e){}}
+const NAP={ids:[],st:{playing:false,pos:0,dur:0},pollT:0,_upTk:0,lastErr:'',
+send(autoplay){NAP.stop();try{const P=capPlugin();const t=cur();const _nu=napUri(t);if(!P||!t||!_nu)return false;const q=[];let idx=0,ni=0;(S.queue||[]).forEach((id,i)=>{const m=S.lib.find(x=>x.id===id);if(m&&napUri(m)){q.push({uri:napUri(m),title:m.title||'',artist:m.artist||''});if(i===S.qi)idx=ni;ni++}});if(!q.length)return false;NAP.ids=(S.queue||[]).filter(id=>{const m=S.lib.find(x=>x.id===id);return m&&napUri(m)});try{const pr=P.audioPlay({uri:_nu,title:t.title||'',artist:t.artist||'',acc:S.acc||'#0b84ff',autoplay:!!autoplay,queue:q,index:idx,repeat:S.rep||0});if(pr&&pr.catch)pr.catch(e=>{try{NAP.lastErr='play:'+(e&&(e.message||e)||'?')}catch(_){}try{toast('🔇 '+(e&&(e.message||e)||'?'))}catch(_){}})}catch(e){try{NAP.lastErr='send-throw:'+(e&&(e.message||e)||e)}catch(_){}return false}try{if(P.nativeEQ){const ee=S.eq||{on:false,bands:[],bass:0};const nq=P.nativeEQ({on:!!ee.on,bands:(ee.bands||[]).map(v=>+v||0),bass:Math.min(12,+(ee.bass||0))});if(nq&&nq.catch)nq.catch(()=>{})}}catch(e){}NAP.st.playing=!!autoplay;NAP.kick();return true}catch(e){try{NAP.lastErr='send:'+(e&&(e.message||e)||e)}catch(_){}return false}},
 kick(){try{clearInterval(NAP.pollT)}catch(e){}NAP.pollT=setInterval(()=>{try{const P=capPlugin();if(!P||!P.audioPos)return;const t=cur();if(!t||!napUri(t))return;const pr=P.audioPos();if(pr&&pr.then)pr.then(r=>{try{NAP.st.playing=!!(r&&r.playing);NAP.st.pos=+(r&&r.pos||0);NAP.st.dur=+(r&&r.dur||0);if(r&&r.playing){S.playSec=S.playSec||{};S.playSec[t.id]=Math.round(((S.playSec[t.id]||0)+1)*10)/10;NAP._secN=(NAP._secN||0)+1;if(NAP._secN%10===0){try{save()}catch(_){}}}NAP.paint()}catch(e){}}).catch(()=>{})}catch(e){}},1000)},
-paint(){try{if(!NAP.pollT)return;const t=cur();if(!t||!napUri(t))return;const p=NAP.st.pos||0,d=NAP.st.dur||0;if(d>0){try{$('seekEl').value=Math.min(1000,p/d*1000)}catch(e){}try{$('tCur').textContent=fmt(p);$('tDur').textContent=fmt(d)}catch(e){}try{document.querySelector('#miniBar i').style.width=(p/d*100)+'%'}catch(e){}}const ic=NAP.st.playing?'❚❚':'▶';try{$('miniPlay').textContent=ic}catch(e){}try{$('playBtn').textContent=ic}catch(e){}try{const a=AU();if(!a.paused)a.pause()}catch(e){}try{if('mediaSession' in navigator)navigator.mediaSession.playbackState=NAP.st.playing?'playing':'paused'}catch(e){}try{if('mediaSession' in navigator&&navigator.mediaSession.setPositionState&&d>0)navigator.mediaSession.setPositionState({duration:d,playbackRate:1,position:Math.min(p,d)})}catch(e){}}catch(e){}},
+paint(){try{if(!NAP.pollT)return;const t=cur();if(!t||!napUri(t))return;const p=NAP.st.pos||0,d=NAP.st.dur||0;if(d>0){try{$('seekEl').value=Math.min(1000,p/d*1000)}catch(e){}try{$('tCur').textContent=fmt(p);$('tDur').textContent=fmt(d)}catch(e){}try{document.querySelector('#miniBar i').style.width=(p/d*100)+'%'}catch(e){}}try{setPlayIcon($('miniPlay'),NAP.st.playing)}catch(e){}try{setPlayIcon($('playBtn'),NAP.st.playing)}catch(e){}try{const a=AU();if(!a.paused)a.pause()}catch(e){}try{if('mediaSession' in navigator)navigator.mediaSession.playbackState=NAP.st.playing?'playing':'paused'}catch(e){}try{if('mediaSession' in navigator&&navigator.mediaSession.setPositionState&&d>0)navigator.mediaSession.setPositionState({duration:d,playbackRate:1,position:Math.min(p,d)})}catch(e){}}catch(e){}},
 stop(){try{clearInterval(NAP.pollT)}catch(e){}NAP.pollT=0;NAP.st.playing=false},
 async ensure(id){try{const t=S.lib.find(x=>x.id===id);if(!t||t.nativeUri)return t&&t.nativeUri;const P=capPlugin();const f=_fileById[id];if(!t||!P||!P.cacheOpen||!f)return null;const op=await P.cacheOpen({name:f.name||'track.mp3'});const path=op&&op.path;if(!path)return null;const CH=393216;let off=0;while(off<f.size){const sl=f.slice(off,off+CH);const b64=await new Promise((res,rej)=>{try{const r=new FileReader();r.onload=()=>{try{const s=String(r.result||'');const ix=s.indexOf(',');res(ix>=0?s.slice(ix+1):s)}catch(e){rej(e)}};r.onerror=rej;r.readAsDataURL(sl)}catch(e){rej(e)}});await P.cacheChunk({path:path,data:b64});off+=CH}const dn=await P.cacheDone({path:path});const uri=dn&&dn.uri;if(uri){try{t.nativeUri=uri;capCacheSave()}catch(e){}}return uri||null}catch(e){return null}},
 async cachePlay(id,autoplay){const tk=++NAP._upTk;try{toast(T('caching'))}catch(e){}try{const uri=await NAP.ensure(id);if(tk!==NAP._upTk)return;const t=S.lib.find(x=>x.id===id);if(!t||!uri){try{toast(T('noAudio'))}catch(e){}return}if(cur()&&cur().id===id){if(NAP.send(autoplay)){try{toast(T('cached'))}catch(e){}try{syncPlayer()}catch(e){}try{renderAll()}catch(e){}try{capPlayerSync()}catch(e){}}}}catch(e){try{toast(T('noAudio'))}catch(e){}}}};
@@ -515,7 +517,7 @@ $('miniT').textContent=t.title;$('miniA').textContent=t.artist+' • '+t.album;
 $('miniCv').style.cssText=cvStyle(t.title,3)+';overflow:hidden;padding:0';syncCovers(t);
 $('fullT').textContent=t.title;$('fullA').textContent=t.artist+' — '+t.album;
 $('fullCv').style.cssText=cvStyle(t.title,5)+';width:min(300px,70vw)';syncCovers(t);
-const _nck=cur()&&napUri(cur())&&NAP.pollT;const _pic=_nck?(NAP.st.playing?'❚❚':'▶'):(AU().paused?'▶':'❚❚');$('miniPlay').textContent=_pic;$('playBtn').textContent=_pic;
+const _nck=cur()&&napUri(cur())&&NAP.pollT;const _pic=_nck?NAP.st.playing:!AU().paused;try{setPlayIcon($('miniPlay'),_pic)}catch(e){}try{setPlayIcon($('playBtn'),_pic)}catch(e){}
 $('shufBtn').style.opacity=S.shuf?1:.4;
 $('repBtn').style.opacity=S.rep?1:.4;$('repBtn').textContent=S.rep===2?'🔂':S.rep===1?'🔁':'🔁';
 $('fullSrc').textContent=(t.demo?T('demoP')+' • ':T('myMusP')+' • ')+(S.qi+1)+'/'+S.queue.length;
@@ -641,6 +643,11 @@ I18N.ru.foldSub='играть из папки';I18N.en.foldSub='play from folder
 $('accEl').innerHTML=['#0b84ff','#00c9ff','#00c9a7','#22b573','#7c4dff','#ff2d55'].map(c=>`<div class="themeDot" data-a="${c}" style="background:${c}"></div>`).join('');
 $('accEl').querySelectorAll('.themeDot').forEach(d=>d.onclick=()=>{S.acc=d.dataset.a;save();applyTheme()});
 if($('setTopBtn'))$('setTopBtn').onclick=()=>openSheet('setSheet');if($('setClose'))$('setClose').onclick=()=>$('setSheet').hidden=true;
+async function diagReport(){const L=[];try{const P=capPlugin();L.push('cap:'+(P?'ok':'MISS'));L.push('lib:'+S.lib.length+' queue:'+(S.queue||[]).length+' qi:'+S.qi);const t=cur();L.push('cur:'+(t?(t.title+' / '+(napUri(t)?'native':'web')):'-'));L.push('NAP playing:'+NAP.st.playing+' pos:'+Math.round(NAP.st.pos||0)+' dur:'+Math.round(NAP.st.dur||0)+' poll:'+(NAP.pollT?'on':'off'));try{const a=AU();L.push('AU paused:'+a.paused+' src:'+((a.src||'').slice(-44)||'-'))}catch(e){L.push('AU:?')}if(NAP.lastErr)L.push('ERR:'+NAP.lastErr);if(P&&P.audioState){try{const r=await P.audioState();L.push('svc:'+JSON.stringify(r).slice(0,240))}catch(e){L.push('svc:МОЛЧИТ '+((e&&(e.message||e))||'?'))}}return L.join('\n')}catch(e){return 'diag err '+e}}
+if($('diagBtn'))$('diagBtn').onclick=async()=>{const b=$('diagBox');b.hidden=false;b.textContent='...';b.textContent=await diagReport()};
+if($('rescanBtn'))$('rescanBtn').onclick=()=>{capScan(false).then(()=>{try{stableOrder()}catch(e){}renderAll()}).catch(()=>{})};
+let _rsT=0;function maybeRescan(){try{const now=Date.now();if(now-_rsT<30000)return;if(S.lib.some(t=>t.capUri||t.nativeUri))return;_rsT=now;capScan(true).then(()=>{try{stableOrder()}catch(e){}renderAll();restoreLast()}).catch(()=>{})}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)maybeRescan()});window.addEventListener('pageshow',()=>maybeRescan());
 if($('xfEl'))$('xfEl').oninput=e=>$('xfL').textContent=e.target.value+'s';
 if($('plNewBtn'))$('plNewBtn').onclick=()=>openPlDlg();
 $('plCancel').onclick=()=>$('plDlg').close();
